@@ -113,8 +113,10 @@ namespace CurveEditorDemo.UI
             set { _outHandleColor = value; SetMaterialDirty(); }
         }
 
-        protected void Awake()
+        protected override void Awake()
         {
+            base.Awake();
+
             if (draggingRect == null)
                 draggingRect = transform.parent.GetComponent<RectTransform>();
 
