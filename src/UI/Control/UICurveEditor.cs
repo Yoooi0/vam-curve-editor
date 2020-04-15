@@ -13,7 +13,6 @@ namespace CurveEditor.UI
 
         public readonly UIDynamic container;
         public readonly GameObject gameObject;
-        private readonly GameObject _canvasContent;
 
         private readonly float _width;
         private readonly float _height;
@@ -23,16 +22,31 @@ namespace CurveEditor.UI
 
         public UICurveLine AddCurve(AnimationCurve curve, Color? color = null, float thickness = 4)
         {
-            var line = _canvasContent.AddComponent<UILine>();
+            var canvasContent = new GameObject();
+            canvasContent.transform.SetParent(gameObject.transform, false);
+
+            if (_lines.Count == 0)
+            {
+                var mouseClick = canvasContent.AddComponent<UIMouseClickBehaviour>();
+                mouseClick.OnClick += OnCanvasClick;
+            }
+
+            var line = canvasContent.AddComponent<UILine>();
             line.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, _width);
             line.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, _height - _buttonHeight);
             line.color = color ?? _colors.lineColor;
-            line.lineThickness = 4;
+            line.lineThickness = thickness;
 
             var curveLine = new UICurveLine(curve, line, _colors);
             _lines.Add(curveLine);
             UpdatePoints(curveLine);
             return curveLine;
+        }
+
+        public void UpdatePoints()
+        {
+            foreach (var line in _lines)
+                UpdatePoints(line);
         }
 
         public void UpdatePoints(AnimationCurve curve)
@@ -71,18 +85,13 @@ namespace CurveEditor.UI
             input.OnInput += OnInput;
 
             var backgroundContent = new GameObject();
-            _canvasContent = new GameObject();
 
             backgroundContent.transform.SetParent(gameObject.transform, false);
-            _canvasContent.transform.SetParent(gameObject.transform, false);
 
             var backgroundImage = backgroundContent.AddComponent<Image>();
             backgroundImage.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, _width);
             backgroundImage.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, _height - _buttonHeight);
             backgroundImage.color = _colors.backgroundColor;
-
-            var mouseClick = _canvasContent.AddComponent<UIMouseClickBehaviour>();
-            mouseClick.OnClick += OnCanvasClick;
 
             var buttonGroup = new UIHorizontalGroup(container, 510, _buttonHeight, new Vector2(0, 0), 4, idx => builder.CreateButtonEx());
             buttonGroup.gameObject.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -(_height - _buttonHeight) / 2);
@@ -203,9 +212,11 @@ namespace CurveEditor.UI
 
         private void OnCanvasClick(object sender, PointerEventArgs e)
         {
+            if (_lines.Count == 0) return;
+
             if (e.Data.clickCount == 2)
             {
-                var line = _lines.Single();
+                var line = _lines[0];
 
                 Vector2 localPosition;
                 if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(line.line.rectTransform, e.Data.position, e.Data.pressEventCamera, out localPosition))
