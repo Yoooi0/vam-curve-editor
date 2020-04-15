@@ -8,8 +8,9 @@ namespace CurveEditor.UI
     {
         private readonly UILine _line;
         private readonly IStorableAnimationCurve _storable;
-        private readonly UIColors _colors;
+        private readonly UICurveLineColors _colors;
         private int _evaluateCount;
+        private UICurveEditorPoint _selectedPoint;
 
         public readonly List<UICurveEditorPoint> points;
 
@@ -21,14 +22,16 @@ namespace CurveEditor.UI
             set { _evaluateCount = value; RedrawLine(); }
         }
 
-        public UICurveLine(IStorableAnimationCurve storable, UILine line, UIColors colors)
+        public UICurveLine(IStorableAnimationCurve storable, UILine line, UICurveLineColors colors = null)
         {
             points = new List<UICurveEditorPoint>();
 
             _storable = storable;
             _line = line;
-            _colors = colors;
+            _colors = colors ?? new UICurveLineColors();
             _evaluateCount = 200;
+
+            _line.color = _colors.lineColor;
 
             SetPointsFromCurve();
         }
@@ -198,6 +201,26 @@ namespace CurveEditor.UI
             UnityEngine.Object.Destroy(point.gameObject);
             Update();
         }
+
+        public void SetSelectedPoint(UICurveEditorPoint point)
+        {
+            if (_selectedPoint != null)
+            {
+                _selectedPoint.color = _colors.pointColor;
+                _selectedPoint.showHandles = false;
+                _selectedPoint = null;
+            }
+
+            if (point != null)
+            {
+                point.color = _colors.selectedPointColor;
+                point.showHandles = true;
+                point.SetVerticesDirty();
+
+                _selectedPoint = point;
+            }
+        }
+
 
         public void SetHandleMode(UICurveEditorPoint point, int mode)
         {

@@ -25,6 +25,7 @@ namespace CurveEditor
 
                 _curveJSON = new JSONStorableAnimationCurve("Curve", CurveUpdated);
                 _curveJSON.SetValToDefault();
+
                 CreateUI();
             }
             catch (Exception e)
@@ -41,7 +42,7 @@ namespace CurveEditor
             _builder = new UIBuilder(this);
 
             _curveEditor = _builder.CreateCurveEditor(300);
-            _curveEditor.AddCurve(_curveJSON);
+            _curveEditor.AddCurve(_curveJSON, UICurveLineColors.CreateFrom(new Color(0.388f, 0.698f, 0.890f)));
             _builder.CreateButton("Reset", () =>
             {
                 _curveJSON.SetValToDefault();

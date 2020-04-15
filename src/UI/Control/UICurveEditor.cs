@@ -16,7 +16,7 @@ namespace CurveEditor.UI
 
         private readonly float _width;
         private readonly float _height;
-        private readonly UIColors _colors;
+        private readonly UICurveEditorColors _colors;
         private readonly List<UICurveLine> _lines;
         private readonly Dictionary<IStorableAnimationCurve, UICurveLine> _storableToLineMap;
         private readonly Dictionary<UICurveLine, GameObject> _lineToContainerMap;
@@ -24,14 +24,14 @@ namespace CurveEditor.UI
 
         private GameObject _linesContainer;
 
-        public UICurveEditor(IUIBuilder builder, UIDynamic container, float width, float height)
+        public UICurveEditor(IUIBuilder builder, UIDynamic container, float width, float height, UICurveEditorColors colors = null)
         {
             this.container = container;
 
             _storableToLineMap = new Dictionary<IStorableAnimationCurve, UICurveLine>();
             _lineToContainerMap = new Dictionary<UICurveLine, GameObject>();
             _lines = new List<UICurveLine>();
-            _colors = new UIColors();
+            _colors = colors ?? new UICurveEditorColors();
 
             _width = width;
             _height = height;
@@ -82,7 +82,7 @@ namespace CurveEditor.UI
             buttons[3].button.onClick.AddListener(OnSetLinearButtonClick);
         }
 
-        public UICurveLine AddCurve(IStorableAnimationCurve storable, Color? color = null, float thickness = 4)
+        public UICurveLine AddCurve(IStorableAnimationCurve storable, UICurveLineColors colors = null, float thickness = 4)
         {
             var lineContainer = new GameObject();
             lineContainer.transform.SetParent(_linesContainer.transform, false);
@@ -97,10 +97,9 @@ namespace CurveEditor.UI
             var line = lineContainer.AddComponent<UILine>();
             line.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, rectTransform.sizeDelta.x);
             line.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, rectTransform.sizeDelta.y);
-            line.color = color ?? _colors.lineColor;
             line.lineThickness = thickness;
 
-            var curveLine = new UICurveLine(storable, line, _colors);
+            var curveLine = new UICurveLine(storable, line, colors);
             _lines.Add(curveLine);
             _storableToLineMap.Add(storable, curveLine);
             _lineToContainerMap.Add(curveLine, lineContainer);
@@ -161,49 +160,16 @@ namespace CurveEditor.UI
 
         private void SetSelectedPoint(UICurveEditorPoint point)
         {
-            if (_selectedPoint != null)
-            {
-                _selectedPoint.color = _colors.pointColor;
-                _selectedPoint.showHandles = false;
-                _selectedPoint = null;
-            }
+            foreach (var line in _lines)
+                line.SetSelectedPoint(null);
 
-            if (point != null)
-            {
-                point.color = _colors.selectedPointColor;
-                point.showHandles = true;
-                point.SetVerticesDirty();
-
-                _selectedPoint = point;
-            }
+            point?.owner?.SetSelectedPoint(point);
+            _selectedPoint = point;
         }
 
-        private void SetHandleMode(UICurveEditorPoint point, int mode)
-        {
-            if (point == null)
-                return;
-
-            point.handleMode = mode;
-            point.lineColor = mode == 0 ? _colors.handleLineColor : _colors.handleLineColorFree;
-        }
-
-        private void SetOutHandleMode(UICurveEditorPoint point, int mode)
-        {
-            if (point == null)
-                return;
-
-            point.outHandleMode = mode;
-            point.outHandleColor = mode == 0 ? _colors.outHandleColor : _colors.outHandleColorWeighted;
-        }
-
-        private void SetInHandleMode(UICurveEditorPoint point, int mode)
-        {
-            if (point == null)
-                return;
-
-            point.inHandleMode = mode;
-            point.inHandleColor = mode == 0 ? _colors.inHandleColor : _colors.inHandleColorWeighted;
-        }
+        private void SetHandleMode(UICurveEditorPoint point, int mode) => point?.owner?.SetHandleMode(point, mode);
+        private void SetOutHandleMode(UICurveEditorPoint point, int mode) => point?.owner?.SetOutHandleMode(point, mode);
+        private void SetInHandleMode(UICurveEditorPoint point, int mode) => point?.owner?.SetInHandleMode(point, mode);
 
         private void OnInput(object sender, InputEventArgs e)
         {
@@ -215,21 +181,6 @@ namespace CurveEditor.UI
                     {
                         DestroyPoint(_selectedPoint);
                         SetSelectedPoint(null);
-                    }
-                    else if (e.Key == KeyCode.Z)
-                    {
-                        SetInHandleMode(_selectedPoint, 1 - _selectedPoint.inHandleMode);
-                        _selectedPoint.owner.Update();
-                    }
-                    else if (e.Key == KeyCode.X)
-                    {
-                        SetOutHandleMode(_selectedPoint, 1 - _selectedPoint.outHandleMode);
-                        _selectedPoint.owner.Update();
-                    }
-                    else if (e.Key == KeyCode.C)
-                    {
-                        SetHandleMode(_selectedPoint, 1 - _selectedPoint.handleMode);
-                        _selectedPoint.owner.Update();
                     }
                 }
             }
