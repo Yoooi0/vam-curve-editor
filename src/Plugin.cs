@@ -65,6 +65,8 @@ namespace CurveEditor
 
         private void CurveUpdated(AnimationCurve curve)
         {
+            var playing = _animation.isPlaying;
+            var time = _animation["CurveEditorDemo"]?.time ?? 0;
             var clip = new AnimationClip
             {
                 legacy = true,
@@ -72,6 +74,11 @@ namespace CurveEditor
             };
             clip.SetCurve("", typeof(Transform), "localPosition.x", curve);
             _animation.AddClip(clip, "CurveEditorDemo");
+            if (playing)
+            {
+                _animation["CurveEditorDemo"].time = time;
+                _animation.Play("CurveEditorDemo");
+            }
         }
 
         public override JSONClass GetJSON(bool includePhysical = true, bool includeAppearance = true, bool forceStore = false)

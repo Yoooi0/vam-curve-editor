@@ -1,7 +1,4 @@
 
-using System;
-using System.Globalization;
-using System.Linq;
 using SimpleJSON;
 using UnityEngine;
 
@@ -19,7 +16,7 @@ namespace CurveEditor
 
         public AnimationCurve val { get; set; } = new AnimationCurve();
 
-        private AnimationCurveUpdatedCallback updatedCallbackFunction;
+        private readonly AnimationCurveUpdatedCallback _updatedCallbackFunction;
 
         public JSONStorableAnimationCurve(string paramName)
             : this(paramName, new AnimationCurve(), null)
@@ -40,7 +37,12 @@ namespace CurveEditor
         {
             name = paramName;
             val = curve;
-            updatedCallbackFunction = callback;
+            _updatedCallbackFunction = callback;
+        }
+
+        public void NotifyUpdated()
+        {
+            _updatedCallbackFunction?.Invoke(val);
         }
 
         public override bool StoreJSON(JSONClass jc, bool includePhysical = true, bool includeAppearance = true, bool forceStore = false)
@@ -104,7 +106,7 @@ namespace CurveEditor
                 SetValToDefault();
             }
 
-            updatedCallbackFunction?.Invoke(val);
+            NotifyUpdated();
         }
 
         public override void LateRestoreFromJSON(JSONClass jc, bool restorePhysical = true, bool restoreAppearance = true, bool setMissingToDefault = true)
@@ -117,7 +119,7 @@ namespace CurveEditor
 
             val.keys = _defaultVal;
 
-            updatedCallbackFunction?.Invoke(val);
+            NotifyUpdated();
         }
 
         public override void SetDefaultFromCurrent()

@@ -97,6 +97,8 @@ namespace CurveEditor.UI
             }
 
             line.points = result;
+
+            storable.NotifyUpdated();
         }
 
         public IList<UICurveEditorPoint> SetPointsFromCurve()
