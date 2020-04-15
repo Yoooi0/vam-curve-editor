@@ -20,7 +20,7 @@ namespace CurveEditor.UI
         JSONStorableBool CreateToggle(string paramName, string label, bool startingValue, JSONStorableBool.SetBoolCallback callback, bool rightSide = false);
         JSONStorableBool CreateToggle(string paramName, string label, bool startingValue, bool rightSide = false);
         UIDynamic CreateSpacer(float height, bool rightSide = false);
-        UICurveEditor CreateCurveEditor(string paramName, float height, bool rightSide = false);
+        UICurveEditor CreateCurveEditor(float height, bool rightSide = false);
         UIHorizontalGroup CreateHorizontalGroup(float width, float height, Vector2 spacing, int count, Func<int, Transform> itemCreator, bool rightSide = false);
 
         Transform CreateButtonEx();

@@ -1,5 +1,4 @@
-﻿using CurveEditor.UI;
-using CurveEditor.Utils;
+﻿using CurveEditor.Utils;
 using SimpleJSON;
 using System;
 using System.Collections.Generic;
@@ -37,10 +36,9 @@ namespace CurveEditor.UI
             set { _curve = value; SetPointsFromKeyframes(value.keys.ToList()); }
         }
 
-        public UICurveEditor(IUIBuilder builder, UIDynamic container, string name, float width, float height)
+        public UICurveEditor(IUIBuilder builder, UIDynamic container, float width, float height)
         {
             this.container = container;
-            this.name = name;
 
             _colors = new UIColors();
 
