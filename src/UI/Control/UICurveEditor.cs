@@ -44,7 +44,7 @@ namespace CurveEditor.UI
 
         private void UpdatePoints(UICurveLine line)
         {
-            foreach (var point in line.SetPointsFromKeyframes(line.curve.keys.ToList()))
+            foreach (var point in line.SetPointsFromCurve())
             {
                 BindPoint(point);
             }
@@ -297,7 +297,7 @@ namespace CurveEditor.UI
             }
 
             curve.MoveKey(idx, key);
-            foreach (var point in line.SetPointsFromKeyframes(curve.keys.ToList()))
+            foreach (var point in line.SetPointsFromCurve())
             {
                 BindPoint(point);
             }

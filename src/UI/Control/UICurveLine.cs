@@ -30,7 +30,7 @@ namespace CurveEditor.UI
             var sizeDelta = line.rectTransform.sizeDelta;
 
             points.Sort(new UICurveEditorPointComparer());
-            while (curve.keys.Length > points.Count)
+            while (curve.length > points.Count)
                 curve.RemoveKey(0);
 
             for (var i = 0; i < points.Count; i++)
@@ -81,7 +81,7 @@ namespace CurveEditor.UI
                     }
                 }
 
-                if (i >= curve.keys.Length)
+                if (i >= curve.length)
                     curve.AddKey(key);
                 else
                     curve.MoveKey(i, key);
@@ -98,19 +98,19 @@ namespace CurveEditor.UI
             line.points = result;
         }
 
-        public IList<UICurveEditorPoint> SetPointsFromKeyframes(List<Keyframe> keyframes)
+        public IList<UICurveEditorPoint> SetPointsFromCurve()
         {
             var sizeDelta = line.rectTransform.sizeDelta;
 
-            while (points.Count > keyframes.Count)
+            while (points.Count > curve.length)
                 DestroyPoint(points[0]);
-            while (points.Count < keyframes.Count)
+            while (points.Count < curve.length)
                 CreatePoint(new Vector2());
 
-            for (var i = 0; i < keyframes.Count; i++)
+            for (var i = 0; i < curve.length; i++)
             {
                 var point = points[i];
-                var key = keyframes[i];
+                var key = curve[i];
                 point.rectTransform.anchoredPosition = new Vector2(key.time, key.value) * sizeDelta;
 
                 if (key.inTangent != key.outTangent)
@@ -120,9 +120,9 @@ namespace CurveEditor.UI
                 if (((int)key.weightedMode & 2) > 0) point.outHandleMode = 1;
 
                 var outHandleNormal = (MathUtils.VectorFromAngle(Mathf.Atan(key.outTangent)) * sizeDelta).normalized;
-                if (point.outHandleMode == 1 && i < keyframes.Count - 1)
+                if (point.outHandleMode == 1 && i < curve.length - 1)
                 {
-                    var x = key.outWeight * (keyframes[i + 1].time - key.time) * sizeDelta.x;
+                    var x = key.outWeight * (curve[i + 1].time - key.time) * sizeDelta.x;
                     var y = x * (outHandleNormal.y / outHandleNormal.x);
                     var length = Mathf.Sqrt(x * x + y * y);
                     point.outHandlePosition = outHandleNormal * length;
@@ -135,7 +135,7 @@ namespace CurveEditor.UI
                 var inHandleNormal = -(MathUtils.VectorFromAngle(Mathf.Atan(key.inTangent)) * sizeDelta).normalized;
                 if (point.inHandleMode == 1 && i > 0)
                 {
-                    var x = key.inWeight * (key.time - keyframes[i - 1].time) * sizeDelta.x;
+                    var x = key.inWeight * (key.time - curve[i - 1].time) * sizeDelta.x;
                     var y = x * (inHandleNormal.y / inHandleNormal.x);
                     var length = Mathf.Sqrt(x * x + y * y);
                     point.inHandlePosition = inHandleNormal * length;
