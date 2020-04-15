@@ -10,12 +10,13 @@ namespace CurveEditor.UI
         public readonly UIDynamic container;
         public readonly GameObject gameObject;
 
-        public List<GameObject> items = new List<GameObject>();
+        public readonly List<GameObject> items;
 
         public UIHorizontalGroup(UIDynamic container, float width, float height, Vector2 spacing, int count, Func<int, Transform> itemCreator)
         {
             this.container = container;
 
+            items = new List<GameObject>();
             gameObject = new GameObject();
             gameObject.transform.SetParent(container.gameObject.transform, false);
 

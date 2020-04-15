@@ -1,6 +1,8 @@
 
+using Oculus.Platform;
 using SimpleJSON;
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace CurveEditor
 {
@@ -8,13 +10,18 @@ namespace CurveEditor
     {
         public delegate void AnimationCurveUpdatedCallback(AnimationCurve val);
 
-        public Keyframe[] _defaultVal = new[]
+        private AnimationCurve _val;
+        private Keyframe[] _defaultVal = new[]
         {
             new Keyframe(0, 0),
             new Keyframe(1, 1)
         };
 
-        public AnimationCurve val { get; set; } = new AnimationCurve();
+        public AnimationCurve val
+        {
+            get { return _val; }
+            set { _val = value; NotifyUpdated(); }
+        }
 
         private readonly AnimationCurveUpdatedCallback _updatedCallbackFunction;
 
@@ -122,9 +129,6 @@ namespace CurveEditor
             NotifyUpdated();
         }
 
-        public override void SetDefaultFromCurrent()
-        {
-            _defaultVal = val.keys;
-        }
+        public override void SetDefaultFromCurrent() => _defaultVal = val.keys;
     }
 }

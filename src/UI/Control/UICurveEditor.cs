@@ -17,61 +17,24 @@ namespace CurveEditor.UI
         private readonly float _width;
         private readonly float _height;
         private readonly UIColors _colors;
-        private readonly List<UICurveLine> _lines = new List<UICurveLine>();
+        private readonly List<UICurveLine> _lines;
+        private readonly Dictionary<IStorableAnimationCurve, UICurveLine> _storableToLineMap;
+        private readonly Dictionary<UICurveLine, GameObject> _lineToContainerMap;
         private UICurveEditorPoint _selectedPoint;
 
-        public UICurveLine AddCurve(IStorableAnimationCurve storable, Color? color = null, float thickness = 4)
-        {
-            var canvasContent = new GameObject();
-            canvasContent.transform.SetParent(gameObject.transform, false);
-
-            if (_lines.Count == 0)
-            {
-                var mouseClick = canvasContent.AddComponent<UIMouseClickBehaviour>();
-                mouseClick.OnClick += OnCanvasClick;
-            }
-
-            var line = canvasContent.AddComponent<UILine>();
-            line.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, _width);
-            line.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, _height - _buttonHeight);
-            line.color = color ?? _colors.lineColor;
-            line.lineThickness = thickness;
-
-            var curveLine = new UICurveLine(storable, line, _colors);
-            _lines.Add(curveLine);
-            UpdatePoints(curveLine);
-            return curveLine;
-        }
-
-        public void UpdatePoints()
-        {
-            foreach (var line in _lines)
-                UpdatePoints(line);
-        }
-
-        public void UpdatePoints(IStorableAnimationCurve storable)
-        {
-            var line = _lines.FirstOrDefault(l => l.storable == storable);
-            if (line == null) return;
-            UpdatePoints(line);
-        }
-
-        private void UpdatePoints(UICurveLine line)
-        {
-            foreach (var point in line.SetPointsFromCurve())
-            {
-                BindPoint(point);
-            }
-        }
+        private GameObject _linesContainer;
 
         public UICurveEditor(IUIBuilder builder, UIDynamic container, float width, float height)
         {
             this.container = container;
 
+            _storableToLineMap = new Dictionary<IStorableAnimationCurve, UICurveLine>();
+            _lineToContainerMap = new Dictionary<UICurveLine, GameObject>();
+            _lines = new List<UICurveLine>();
+            _colors = new UIColors();
+
             _width = width;
             _height = height;
-
-            _colors = new UIColors();
 
             gameObject = new GameObject();
             gameObject.transform.SetParent(container.transform, false);
@@ -85,13 +48,18 @@ namespace CurveEditor.UI
             input.OnInput += OnInput;
 
             var backgroundContent = new GameObject();
-
             backgroundContent.transform.SetParent(gameObject.transform, false);
 
             var backgroundImage = backgroundContent.AddComponent<Image>();
             backgroundImage.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, _width);
             backgroundImage.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, _height - _buttonHeight);
             backgroundImage.color = _colors.backgroundColor;
+
+            _linesContainer = new GameObject();
+            _linesContainer.transform.SetParent(gameObject.transform, false);
+            var lineContainerRectTranform = _linesContainer.AddComponent<RectTransform>();
+            lineContainerRectTranform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, _width);
+            lineContainerRectTranform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, _height - _buttonHeight);
 
             var buttonGroup = new UIHorizontalGroup(container, 510, _buttonHeight, new Vector2(0, 0), 4, idx => builder.CreateButtonEx());
             buttonGroup.gameObject.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -(_height - _buttonHeight) / 2);
@@ -114,10 +82,63 @@ namespace CurveEditor.UI
             buttons[3].button.onClick.AddListener(OnSetLinearButtonClick);
         }
 
+        public UICurveLine AddCurve(IStorableAnimationCurve storable, Color? color = null, float thickness = 4)
+        {
+            var lineContainer = new GameObject();
+            lineContainer.transform.SetParent(_linesContainer.transform, false);
+
+            if (_lines.Count == 0)
+            {
+                var mouseClick = lineContainer.AddComponent<UIMouseClickBehaviour>();
+                mouseClick.OnClick += OnCanvasClick;
+            }
+
+            var rectTransform = _linesContainer.GetComponent<RectTransform>();
+            var line = lineContainer.AddComponent<UILine>();
+            line.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, rectTransform.sizeDelta.x);
+            line.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, rectTransform.sizeDelta.y);
+            line.color = color ?? _colors.lineColor;
+            line.lineThickness = thickness;
+
+            var curveLine = new UICurveLine(storable, line, _colors);
+            _lines.Add(curveLine);
+            _storableToLineMap.Add(storable, curveLine);
+            _lineToContainerMap.Add(curveLine, lineContainer);
+
+            return curveLine;
+        }
+
+        public void RemoveCurve(IStorableAnimationCurve storable)
+        {
+            if (!_storableToLineMap.ContainsKey(storable))
+                return;
+
+            var line = _storableToLineMap[storable];
+            _storableToLineMap.Remove(storable);
+            _lines.Remove(line);
+
+            var lineContainer = _lineToContainerMap[line];
+            _lineToContainerMap.Remove(line);
+            GameObject.Destroy(lineContainer);
+        }
+
+        public void UpdateCurve(IStorableAnimationCurve storable)
+        {
+            UICurveLine line;
+            if (!_storableToLineMap.TryGetValue(storable, out line))
+                return;
+
+            line.SetPointsFromCurve();
+            foreach (var point in line.points)
+                BindPoint(point);
+        }
+
         private UICurveEditorPoint CreatePoint(Vector2 position)
         {
             var line = _lines.FirstOrDefault();
-            if (line == null) return null;
+            if (line == null)
+                return null;
+
             var point = line.CreatePoint(position);
             BindPoint(point);
             return point;
@@ -125,6 +146,9 @@ namespace CurveEditor.UI
 
         private void BindPoint(UICurveEditorPoint point)
         {
+            if (point == null)
+                return;
+
             point.OnDragBegin += OnPointBeginDrag;
             point.OnDragging += OnPointDragging;
             point.OnClick += OnPointClick;
@@ -132,7 +156,7 @@ namespace CurveEditor.UI
 
         private void DestroyPoint(UICurveEditorPoint point)
         {
-            point.owner.DestroyPoint(point);
+            point?.owner?.DestroyPoint(point);
         }
 
         private void SetSelectedPoint(UICurveEditorPoint point)
@@ -180,6 +204,7 @@ namespace CurveEditor.UI
             point.inHandleMode = mode;
             point.inHandleColor = mode == 0 ? _colors.inHandleColor : _colors.inHandleColorWeighted;
         }
+
         private void OnInput(object sender, InputEventArgs e)
         {
             if (_selectedPoint != null)
@@ -194,17 +219,17 @@ namespace CurveEditor.UI
                     else if (e.Key == KeyCode.Z)
                     {
                         SetInHandleMode(_selectedPoint, 1 - _selectedPoint.inHandleMode);
-                        _selectedPoint.owner.UpdateCurve();
+                        _selectedPoint.owner.Update();
                     }
                     else if (e.Key == KeyCode.X)
                     {
                         SetOutHandleMode(_selectedPoint, 1 - _selectedPoint.outHandleMode);
-                        _selectedPoint.owner.UpdateCurve();
+                        _selectedPoint.owner.Update();
                     }
                     else if (e.Key == KeyCode.C)
                     {
                         SetHandleMode(_selectedPoint, 1 - _selectedPoint.handleMode);
-                        _selectedPoint.owner.UpdateCurve();
+                        _selectedPoint.owner.Update();
                     }
                 }
             }
@@ -212,19 +237,22 @@ namespace CurveEditor.UI
 
         private void OnCanvasClick(object sender, PointerEventArgs e)
         {
-            if (_lines.Count == 0) return;
+            if (_lines.Count == 0)
+                return;
 
-            if (e.Data.clickCount == 2)
+            if (e.Data.clickCount > 0 && e.Data.clickCount % 2 == 0)
             {
                 var line = _lines[0];
+                var rectTransform = _linesContainer.GetComponent<RectTransform>();
 
                 Vector2 localPosition;
-                if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(line.line.rectTransform, e.Data.position, e.Data.pressEventCamera, out localPosition))
+                if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(rectTransform, e.Data.position, e.Data.pressEventCamera, out localPosition))
                     return;
 
-                CreatePoint(localPosition + line.line.rectTransform.sizeDelta / 2);
-                line.UpdateCurve();
+                CreatePoint(localPosition + rectTransform.sizeDelta / 2);
                 SetSelectedPoint(null);
+
+                line.Update();
             }
 
             if (IsClickOutsidePoint(_selectedPoint, e.Data))
@@ -238,7 +266,7 @@ namespace CurveEditor.UI
                 SetSelectedPoint(p);
         }
 
-        private void OnPointDragging(object sender, UICurveEditorPoint.EventArgs e) => _selectedPoint.owner.UpdateCurve();
+        private void OnPointDragging(object sender, UICurveEditorPoint.EventArgs e) => _selectedPoint?.owner?.Update();
 
         private void OnPointClick(object sender, UICurveEditorPoint.EventArgs e)
         {
@@ -246,7 +274,9 @@ namespace CurveEditor.UI
             if (!e.Data.dragging)
             {
                 if (e.IsPointEvent)
+                {
                     SetSelectedPoint(point);
+                }
                 else if (!e.IsInHandleEvent && !e.IsOutHandleEvent)
                 {
                     if (IsClickOutsidePoint(point, e.Data))
@@ -260,7 +290,7 @@ namespace CurveEditor.UI
             if (_selectedPoint != null)
             {
                 SetHandleMode(_selectedPoint, 1 - _selectedPoint.handleMode);
-                _selectedPoint.owner.UpdateCurve();
+                _selectedPoint.owner.Update();
             }
         }
 
@@ -269,7 +299,7 @@ namespace CurveEditor.UI
             if (_selectedPoint != null)
             {
                 SetOutHandleMode(_selectedPoint, 1 - _selectedPoint.outHandleMode);
-                _selectedPoint.owner.UpdateCurve();
+                _selectedPoint.owner.Update();
             }
         }
 
@@ -278,7 +308,7 @@ namespace CurveEditor.UI
             if (_selectedPoint != null)
             {
                 SetInHandleMode(_selectedPoint, 1 - _selectedPoint.inHandleMode);
-                _selectedPoint.owner.UpdateCurve();
+                _selectedPoint.owner.Update();
             }
         }
 
@@ -308,10 +338,7 @@ namespace CurveEditor.UI
             }
 
             curve.MoveKey(idx, key);
-            foreach (var point in line.SetPointsFromCurve())
-            {
-                BindPoint(point);
-            }
+            line.SetPointsFromCurve();
         }
 
         private bool IsClickOutsidePoint(UICurveEditorPoint point, PointerEventData eventData)
@@ -319,12 +346,12 @@ namespace CurveEditor.UI
             if (point == null)
                 return false;
 
-            var line = point.owner;
+            var rectTransform = _linesContainer.GetComponent<RectTransform>();
 
             Vector2 localPoint;
-            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(line.line.rectTransform, eventData.pressPosition, eventData.pressEventCamera, out localPoint))
+            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(rectTransform, eventData.pressPosition, eventData.pressEventCamera, out localPoint))
             {
-                var p = localPoint + line.line.rectTransform.sizeDelta / 2;
+                var p = localPoint + rectTransform.sizeDelta / 2;
                 var c = point.rectTransform.anchoredPosition;
                 var a = c + point.inHandlePosition;
                 var b = c + point.outHandlePosition;

@@ -20,7 +20,9 @@ namespace CurveEditor
         {
             try
             {
-                _animation = containingAtom.GetComponent<Animation>() ?? containingAtom.gameObject.AddComponent<Animation>();
+                if(containingAtom != null)
+                    _animation = containingAtom.GetComponent<Animation>() ?? containingAtom.gameObject.AddComponent<Animation>();
+
                 _curveJSON = new JSONStorableAnimationCurve("Curve", CurveUpdated);
                 _curveJSON.SetValToDefault();
                 CreateUI();
@@ -43,12 +45,7 @@ namespace CurveEditor
             _builder.CreateButton("Reset", () =>
             {
                 _curveJSON.SetValToDefault();
-                _curveEditor.UpdatePoints(_curveJSON);
-            });
-            _builder.CreateButton("Reset", () =>
-            {
-                _curveJSON.SetValToDefault();
-                _curveEditor.UpdatePoints(_curveJSON);
+                _curveEditor.UpdateCurve(_curveJSON);
             });
             _builder.CreateButton("Play", () =>
             {
@@ -69,6 +66,9 @@ namespace CurveEditor
 
         private void CurveUpdated(AnimationCurve curve)
         {
+            if (_animation == null)
+                return;
+
             var playing = _animation.isPlaying;
             var time = _animation["CurveEditorDemo"]?.time ?? 0;
             var clip = new AnimationClip
@@ -97,7 +97,7 @@ namespace CurveEditor
             base.RestoreFromJSON(jc, restorePhysical, restoreAppearance, presetAtoms, setMissingToDefault);
 
             _curveJSON.RestoreFromJSON(jc, restorePhysical, restoreAppearance, setMissingToDefault);
-            _curveEditor.UpdatePoints(_curveJSON);
+            _curveEditor.UpdateCurve(_curveJSON);
         }
 
         public override void LateRestoreFromJSON(JSONClass jc, bool restorePhysical = true, bool restoreAppearance = true, bool setMissingToDefault = true)
