@@ -21,12 +21,12 @@ namespace CurveEditor.UI
         private readonly List<UICurveLine> _lines = new List<UICurveLine>();
         private UICurveEditorPoint _selectedPoint;
 
-        public UICurveLine AddCurve(AnimationCurve curve)
+        public UICurveLine AddCurve(AnimationCurve curve, Color? color = null, float thickness = 4)
         {
             var line = _canvasContent.AddComponent<UILine>();
             line.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, _width);
             line.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, _height - _buttonHeight);
-            line.color = _colors.lineColor;
+            line.color = color ?? _colors.lineColor;
             line.lineThickness = 4;
 
             var curveLine = new UICurveLine(curve, line, _colors);
