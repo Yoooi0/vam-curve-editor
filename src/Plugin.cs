@@ -1,8 +1,8 @@
-using CurveEditorDemo.UI;
+using CurveEditor.UI;
 using System;
 using UnityEngine;
 
-namespace CurveEditorDemo
+namespace CurveEditor
 {
     public partial class Plugin : MVRScript
     {

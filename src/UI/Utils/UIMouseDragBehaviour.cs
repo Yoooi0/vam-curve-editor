@@ -2,7 +2,7 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-namespace CurveEditorDemo.UI
+namespace CurveEditor.UI
 {
     public class UIMouseDragBehaviour : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
     {

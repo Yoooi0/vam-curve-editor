@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
-namespace CurveEditorDemo.UI
+namespace CurveEditor.UI
 {
     public interface IUIBuilder
     {

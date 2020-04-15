@@ -1,10 +1,10 @@
-﻿using CurveEditorDemo.Utils;
+﻿using CurveEditor.Utils;
 using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-namespace CurveEditorDemo.UI
+namespace CurveEditor.UI
 {
     public class UICurveEditorPoint : MaskableGraphic, IDragHandler, IBeginDragHandler, IEndDragHandler, IPointerClickHandler
     {

@@ -1,5 +1,5 @@
-﻿using CurveEditorDemo.UI;
-using CurveEditorDemo.Utils;
+﻿using CurveEditor.UI;
+using CurveEditor.Utils;
 using SimpleJSON;
 using System;
 using System.Collections.Generic;
@@ -8,7 +8,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-namespace CurveEditorDemo.UI
+namespace CurveEditor.UI
 {
     public class UICurveEditor : JSONStorableParam
     {
@@ -393,7 +393,7 @@ namespace CurveEditorDemo.UI
 
         private void OnOutHandleModeButtonClick()
         {
-            if (_selectedPoint != null) { 
+            if (_selectedPoint != null) {
                 SetOutHandleMode(_selectedPoint, 1 - _selectedPoint.outHandleMode);
                 UpdateCurve();
             }

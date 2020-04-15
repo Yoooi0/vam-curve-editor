@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace CurveEditorDemo.Utils
+namespace CurveEditor.Utils
 {
     public static class MathUtils
     {

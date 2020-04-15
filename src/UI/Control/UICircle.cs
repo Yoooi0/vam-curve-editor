@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 
-namespace CurveEditorDemo.UI
+namespace CurveEditor.UI
 {
     public class UICircle : MaskableGraphic
     {
