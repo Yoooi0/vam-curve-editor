@@ -1,5 +1,6 @@
 
 using System;
+using System.Globalization;
 using System.Linq;
 using SimpleJSON;
 using UnityEngine;
@@ -48,11 +49,23 @@ namespace CurveEditor
             var flag = NeedsStore(jc, includePhysical, includeAppearance) || (forceStore || true);
             if (flag)
             {
+                var jcCurve = new JSONClass();
+                var jcKeyframes = new JSONArray();
                 for (var i = 0; i < val.length; i++)
                 {
-                    var k = val[i];
-                    jc[name][i] = $"{k.time}, {k.value}, {k.inTangent}, {k.outTangent}, {k.inWeight}, {k.outWeight}, {(int)k.weightedMode}";
+                    var keyframe = val[i];
+                    var jcKeyframe = new JSONClass();
+                    jcKeyframe["time"].AsFloat = keyframe.time;
+                    jcKeyframe["value"].AsFloat = keyframe.value;
+                    jcKeyframe["inTangent"].AsFloat = keyframe.inTangent;
+                    jcKeyframe["outTangent"].AsFloat = keyframe.outTangent;
+                    jcKeyframe["inWeight"].AsFloat = keyframe.inWeight;
+                    jcKeyframe["outWeight"].AsFloat = keyframe.outWeight;
+                    jcKeyframe["weightedMode"].AsInt = (int)keyframe.weightedMode;
+                    jcKeyframes.Add(jcKeyframe);
                 }
+                jcCurve["keyframes"] = jcKeyframes;
+                jc[name] = jcCurve;
             }
             return flag;
         }
@@ -67,13 +80,22 @@ namespace CurveEditor
                 while (val.length > 0)
                     val.RemoveKey(0);
 
-                var array = jc[name].AsArray;
+                var jcCurve = jc[name];
+                var jcKeyframes = jcCurve["keyframes"].AsArray;
 
-                for (var i = 0; i < array.Count; i++)
+                for (var i = 0; i < jcKeyframes.Count; i++)
                 {
-                    var values = jc[name][i].Value.Split(new[] { ", " }, StringSplitOptions.RemoveEmptyEntries).Select(s => float.Parse(s)).ToArray();
-                    var key = new Keyframe(values[0], values[1], values[2], values[3], values[4], values[5]);
-                    key.weightedMode = (WeightedMode)(int)values[6];
+                    var jcKeyframe = jcKeyframes[i];
+                    var key = new Keyframe(
+                        jcKeyframe["time"].AsFloat,
+                        jcKeyframe["value"].AsFloat,
+                        jcKeyframe["inTangent"].AsFloat,
+                        jcKeyframe["outTangent"].AsFloat,
+                        jcKeyframe["inWeight"].AsFloat,
+                        jcKeyframe["outWeight"].AsFloat)
+                    {
+                        weightedMode = (WeightedMode)jcKeyframe["weightedMode"].AsInt
+                    };
                     val.AddKey(key);
                 }
             }

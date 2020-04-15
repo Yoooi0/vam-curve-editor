@@ -65,7 +65,6 @@ namespace CurveEditor
 
         private void CurveUpdated(AnimationCurve curve)
         {
-            SuperController.LogMessage("OK");
             var clip = new AnimationClip
             {
                 legacy = true,
