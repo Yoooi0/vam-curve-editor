@@ -48,9 +48,9 @@ namespace CurveEditor
             var flag = NeedsStore(jc, includePhysical, includeAppearance) || (forceStore || true);
             if (flag)
             {
-                for (var i = 0; i < val.keys.Length; i++)
+                for (var i = 0; i < val.length; i++)
                 {
-                    var k = val.keys[i];
+                    var k = val[i];
                     jc[name][i] = $"{k.time}, {k.value}, {k.inTangent}, {k.outTangent}, {k.inWeight}, {k.outWeight}, {(int)k.weightedMode}";
                 }
             }

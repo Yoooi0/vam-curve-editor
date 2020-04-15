@@ -291,18 +291,18 @@ namespace CurveEditor.UI
 
             var idx = line.points.IndexOf(_selectedPoint);
             var curve = line.curve;
-            var key = curve.keys[idx];
+            var key = curve[idx];
 
             if (idx > 0)
             {
-                var prev = curve.keys[idx - 1];
+                var prev = curve[idx - 1];
                 prev.outTangent = key.inTangent = (key.value - prev.value) / (key.time - prev.time);
                 curve.MoveKey(idx - 1, prev);
             }
 
-            if (idx < curve.keys.Length - 1)
+            if (idx < curve.length - 1)
             {
-                var next = curve.keys[idx + 1];
+                var next = curve[idx + 1];
                 next.inTangent = key.outTangent = (next.value - key.value) / (next.time - key.time);
                 curve.MoveKey(idx + 1, next);
             }
