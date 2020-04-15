@@ -2,7 +2,7 @@
 using System;
 using UnityEngine;
 
-namespace CurveEditorDemo.UI
+namespace CurveEditor.UI
 {
     public class UIInputBehaviour : MonoBehaviour
     {

@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEngine.EventSystems;
 
-namespace CurveEditorDemo.UI
+namespace CurveEditor.UI
 {
     public class PointerEventArgs : EventArgs
     {

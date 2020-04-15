@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
-namespace CurveEditorDemo.UI
+namespace CurveEditor.UI
 {
     public class UIBuilder : IUIBuilder
     {
@@ -109,10 +109,10 @@ namespace CurveEditorDemo.UI
             return spacer;
         }
 
-        public UICurveEditor CreateCurveEditor(string paramName, float height, bool rightSide = false)
+        public UICurveEditor CreateCurveEditor(float height, bool rightSide = false)
         {
             var container = CreateSpacer(height, rightSide);
-            return new UICurveEditor(this, container, paramName, 510, height);
+            return new UICurveEditor(this, container, 510, height);
         }
 
         public UIHorizontalGroup CreateHorizontalGroup(float width, float height, Vector2 spacing, int count, Func<int, Transform> itemCreator, bool rightSide = false)

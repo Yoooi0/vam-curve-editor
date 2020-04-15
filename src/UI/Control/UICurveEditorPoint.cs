@@ -1,10 +1,10 @@
-﻿using CurveEditorDemo.Utils;
+﻿using CurveEditor.Utils;
 using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-namespace CurveEditorDemo.UI
+namespace CurveEditor.UI
 {
     public class UICurveEditorPoint : MaskableGraphic, IDragHandler, IBeginDragHandler, IEndDragHandler, IPointerClickHandler
     {
@@ -12,6 +12,8 @@ namespace CurveEditorDemo.UI
         public event EventHandler<EventArgs> OnDragBegin;
         public event EventHandler<EventArgs> OnDragEnd;
         public event EventHandler<EventArgs> OnDragging;
+
+        public UICurveLine owner;
 
         private float _pointRadius = 10;
         private float _handleRadius = 7;
@@ -113,8 +115,10 @@ namespace CurveEditorDemo.UI
             set { _outHandleColor = value; SetMaterialDirty(); }
         }
 
-        protected void Awake()
+        protected override void Awake()
         {
+            base.Awake();
+
             if (draggingRect == null)
                 draggingRect = transform.parent.GetComponent<RectTransform>();
 

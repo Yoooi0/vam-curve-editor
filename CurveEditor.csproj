@@ -89,6 +89,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="src\Plugin.cs" />
+    <Compile Include="src\IStorableAnimationCurve.cs" />
+    <Compile Include="src\JSONStorableAnimationCurve.cs" />
     <Compile Include="src\UI\Control\UIHorizontalGroup.cs" />
     <Compile Include="src\UI\IUIBuilder.cs" />
     <Compile Include="src\UI\Utils\InputEventArgs.cs" />
@@ -100,6 +102,8 @@
     <Compile Include="src\UI\Utils\UIMouseClickBehaviour.cs" />
     <Compile Include="src\UI\Utils\UIMouseDragBehaviour.cs" />
     <Compile Include="src\UI\Control\UICircle.cs" />
+    <Compile Include="src\UI\Control\UIColors.cs" />
+    <Compile Include="src\UI\Control\UICurveLine.cs" />
     <Compile Include="src\UI\UIBuilder.cs" />
     <Compile Include="src\Utils\MathUtils.cs" />
   </ItemGroup>

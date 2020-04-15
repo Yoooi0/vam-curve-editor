@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 
-namespace CurveEditorDemo.UI
+namespace CurveEditor.UI
 {
     public class UICircle : MaskableGraphic
     {
@@ -31,8 +31,9 @@ namespace CurveEditorDemo.UI
             }
         }
 
-        protected void Awake()
+        protected override void Awake()
         {
+            base.Awake();
             rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, _radius * 2);
             rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, _radius * 2);
         }
