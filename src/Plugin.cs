@@ -1,6 +1,7 @@
 using CurveEditor.UI;
 using SimpleJSON;
 using System;
+using UnityEngine;
 
 namespace CurveEditor
 {
@@ -12,13 +13,15 @@ namespace CurveEditor
         public static readonly string PluginAuthor = "Yoooi";
 
         private UICurveEditor _curveEditor;
+        private Animation _animation;
         private JSONStorableAnimationCurve _curveJSON;
 
         public override void Init()
         {
             try
             {
-                _curveJSON = new JSONStorableAnimationCurve("Curve");
+                _animation = containingAtom.GetComponent<Animation>() ?? containingAtom.gameObject.AddComponent<Animation>();
+                _curveJSON = new JSONStorableAnimationCurve("Curve", CurveUpdated);
                 _curveJSON.SetValToDefault();
                 CreateUI();
             }
@@ -42,10 +45,35 @@ namespace CurveEditor
                 _curveJSON.SetValToDefault();
                 _curveEditor.UpdatePoints(_curveJSON);
             });
+            _builder.CreateButton("Reset", () =>
+            {
+                _curveJSON.SetValToDefault();
+                _curveEditor.UpdatePoints(_curveJSON);
+            });
+            _builder.CreateButton("Play", () =>
+            {
+                _animation.Play("CurveEditorDemo");
+            });
+            _builder.CreateButton("Stop", () =>
+            {
+                _animation.Stop();
+            });
         }
 
         protected void Update() { }
         protected void OnDestroy() { }
+
+        private void CurveUpdated(AnimationCurve curve)
+        {
+            SuperController.LogMessage("OK");
+            var clip = new AnimationClip
+            {
+                legacy = true,
+                wrapMode = WrapMode.Loop
+            };
+            clip.SetCurve("", typeof(Transform), "localPosition.x", curve);
+            _animation.AddClip(clip, "CurveEditorDemo");
+        }
 
         public override JSONClass GetJSON(bool includePhysical = true, bool includeAppearance = true, bool forceStore = false)
         {

@@ -8,6 +8,8 @@ namespace CurveEditor
 {
     public class JSONStorableAnimationCurve : JSONStorableParam, IStorableAnimationCurve
     {
+        public delegate void AnimationCurveUpdatedCallback(AnimationCurve val);
+
         public Keyframe[] _defaultVal = new[]
         {
             new Keyframe(0, 0),
@@ -16,16 +18,28 @@ namespace CurveEditor
 
         public AnimationCurve val { get; set; } = new AnimationCurve();
 
+        private AnimationCurveUpdatedCallback updatedCallbackFunction;
+
         public JSONStorableAnimationCurve(string paramName)
+            : this(paramName, new AnimationCurve(), null)
         {
-            name = paramName;
-            val = new AnimationCurve();
+        }
+
+        public JSONStorableAnimationCurve(string paramName, AnimationCurveUpdatedCallback callback)
+            : this(paramName, new AnimationCurve(), callback)
+        {
         }
 
         public JSONStorableAnimationCurve(string paramName, AnimationCurve curve)
+            : this(paramName, curve, null)
+        {
+        }
+
+        public JSONStorableAnimationCurve(string paramName, AnimationCurve curve, AnimationCurveUpdatedCallback callback)
         {
             name = paramName;
             val = curve;
+            updatedCallbackFunction = callback;
         }
 
         public override bool StoreJSON(JSONClass jc, bool includePhysical = true, bool includeAppearance = true, bool forceStore = false)
@@ -67,6 +81,8 @@ namespace CurveEditor
             {
                 SetValToDefault();
             }
+
+            updatedCallbackFunction?.Invoke(val);
         }
 
         public override void LateRestoreFromJSON(JSONClass jc, bool restorePhysical = true, bool restoreAppearance = true, bool setMissingToDefault = true)
@@ -78,6 +94,8 @@ namespace CurveEditor
                 val.RemoveKey(0);
 
             val.keys = _defaultVal;
+
+            updatedCallbackFunction?.Invoke(val);
         }
 
         public override void SetDefaultFromCurrent()
