@@ -89,6 +89,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="src\Plugin.cs" />
+    <Compile Include="src\IStorableAnimationCurve.cs" />
+    <Compile Include="src\JSONStorableAnimationCurve.cs" />
     <Compile Include="src\UI\Control\UIHorizontalGroup.cs" />
     <Compile Include="src\UI\IUIBuilder.cs" />
     <Compile Include="src\UI\Utils\InputEventArgs.cs" />

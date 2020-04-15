@@ -1,4 +1,6 @@
 src\Plugin.cs
+src\IStorableAnimationCurve.cs
+src\JSONStorableAnimationCurve.cs
 src\UI\IUIBuilder.cs
 src\UI\UIBuilder.cs
 src\UI\Control\UIColors.cs

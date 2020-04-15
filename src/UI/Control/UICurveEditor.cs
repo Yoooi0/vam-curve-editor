@@ -20,7 +20,7 @@ namespace CurveEditor.UI
         private readonly List<UICurveLine> _lines = new List<UICurveLine>();
         private UICurveEditorPoint _selectedPoint;
 
-        public UICurveLine AddCurve(AnimationCurve curve, Color? color = null, float thickness = 4)
+        public UICurveLine AddCurve(IStorableAnimationCurve storable, Color? color = null, float thickness = 4)
         {
             var canvasContent = new GameObject();
             canvasContent.transform.SetParent(gameObject.transform, false);
@@ -37,7 +37,7 @@ namespace CurveEditor.UI
             line.color = color ?? _colors.lineColor;
             line.lineThickness = thickness;
 
-            var curveLine = new UICurveLine(curve, line, _colors);
+            var curveLine = new UICurveLine(storable, line, _colors);
             _lines.Add(curveLine);
             UpdatePoints(curveLine);
             return curveLine;
@@ -49,9 +49,9 @@ namespace CurveEditor.UI
                 UpdatePoints(line);
         }
 
-        public void UpdatePoints(AnimationCurve curve)
+        public void UpdatePoints(IStorableAnimationCurve storable)
         {
-            var line = _lines.FirstOrDefault(l => l.curve == curve);
+            var line = _lines.FirstOrDefault(l => l.storable == storable);
             if (line == null) return;
             UpdatePoints(line);
         }

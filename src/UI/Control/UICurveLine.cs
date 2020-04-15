@@ -7,7 +7,8 @@ namespace CurveEditor.UI
     public class UICurveLine
     {
         public UILine line { get; set; }
-        public AnimationCurve curve { get; set; }
+        public IStorableAnimationCurve storable { get; set; }
+        public AnimationCurve curve => storable.val;
         public List<UICurveEditorPoint> points { get; } = new List<UICurveEditorPoint>();
         private readonly UIColors _colors;
         private int _evaluateCount = 200;
@@ -18,9 +19,9 @@ namespace CurveEditor.UI
             set { _evaluateCount = value; UpdateCurve(); }
         }
 
-        public UICurveLine(AnimationCurve curve, UILine line, UIColors colors)
+        public UICurveLine(IStorableAnimationCurve storable, UILine line, UIColors colors)
         {
-            this.curve = curve;
+            this.storable = storable;
             this.line = line;
             _colors = colors;
         }
