@@ -61,7 +61,11 @@ namespace CurveEditor
         }
 
         protected void Update() { }
-        protected void OnDestroy() { }
+        protected void OnDestroy() 
+        {
+            if (_animation != null)
+                GameObject.Destroy(_animation);
+        }
 
         private void CurveUpdated(AnimationCurve curve)
         {
