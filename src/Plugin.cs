@@ -39,11 +39,11 @@ namespace CurveEditor
             _builder = new UIBuilder(this);
 
             CurveEditor = _builder.CreateCurveEditor(300);
-            CurveEditor.curve = Curve;
+            CurveEditor.AddCurve(Curve);
             Button = _builder.CreateButton("Reset", () =>
             {
                 ResetCurve();
-                CurveEditor.curve = Curve;
+                CurveEditor.UpdatePoints(Curve);
             });
         }
 
@@ -95,6 +95,8 @@ namespace CurveEditor
             {
                 ResetCurve();
             }
+
+            CurveEditor.UpdatePoints(Curve);
         }
 
         public override void LateRestoreFromJSON(JSONClass jc, bool restorePhysical = true, bool restoreAppearance = true, bool setMissingToDefault = true)

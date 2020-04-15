@@ -4,6 +4,7 @@ src\UI\UIBuilder.cs
 src\UI\Control\UIColors.cs
 src\UI\Control\UICircle.cs
 src\UI\Control\UILine.cs
+src\UI\Control\UICurveLine.cs
 src\UI\Control\UIHorizontalGroup.cs
 src\UI\Control\UICurveEditor.cs
 src\UI\Control\UICurveEditorPoint.cs

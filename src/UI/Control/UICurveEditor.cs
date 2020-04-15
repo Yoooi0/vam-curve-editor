@@ -1,6 +1,4 @@
 ﻿using CurveEditor.Utils;
-using SimpleJSON;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -9,73 +7,85 @@ using UnityEngine.UI;
 
 namespace CurveEditor.UI
 {
-    public class UICurveEditor : JSONStorableParam
+    public class UICurveEditor
     {
+        private const float _buttonHeight = 25;
+
         public readonly UIDynamic container;
         public readonly GameObject gameObject;
+        private readonly GameObject _canvasContent;
 
-
-        private UILine _line;
-        private AnimationCurve _curve;
+        private readonly float _width;
+        private readonly float _height;
         private readonly UIColors _colors;
+        private readonly List<UICurveLine> _lines = new List<UICurveLine>();
         private UICurveEditorPoint _selectedPoint;
-        private List<Keyframe> _defaultKeyframes;
 
-        private List<UICurveEditorPoint> _points = new List<UICurveEditorPoint>();
-        private int _evaluateCount = 200;
-
-        public int evaluateCount
+        public UICurveLine AddCurve(AnimationCurve curve)
         {
-            get { return _evaluateCount; }
-            set { _evaluateCount = value; UpdateCurve(); }
+            var line = _canvasContent.AddComponent<UILine>();
+            line.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, _width);
+            line.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, _height - _buttonHeight);
+            line.color = _colors.lineColor;
+            line.lineThickness = 4;
+
+            var curveLine = new UICurveLine(curve, line, _colors);
+            _lines.Add(curveLine);
+            UpdatePoints(curveLine);
+            return curveLine;
         }
 
-        public AnimationCurve curve
+        public void UpdatePoints(AnimationCurve curve)
         {
-            get { return _curve; }
-            set { _curve = value; SetPointsFromKeyframes(value.keys.ToList()); }
+            var line = _lines.FirstOrDefault(l => l.curve == curve);
+            if (line == null) return;
+            UpdatePoints(line);
+        }
+
+        private void UpdatePoints(UICurveLine line)
+        {
+            foreach (var point in line.SetPointsFromKeyframes(line.curve.keys.ToList()))
+            {
+                BindPoint(point);
+            }
         }
 
         public UICurveEditor(IUIBuilder builder, UIDynamic container, float width, float height)
         {
             this.container = container;
 
+            _width = width;
+            _height = height;
+
             _colors = new UIColors();
 
             gameObject = new GameObject();
             gameObject.transform.SetParent(container.transform, false);
 
-            var buttonHeight = 25;
             var mask = gameObject.AddComponent<RectMask2D>();
-            mask.rectTransform.anchoredPosition = new Vector2(0, buttonHeight / 2);
-            mask.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
-            mask.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height - buttonHeight);
+            mask.rectTransform.anchoredPosition = new Vector2(0, _buttonHeight / 2);
+            mask.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, _width);
+            mask.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, _height - _buttonHeight);
 
             var input = gameObject.AddComponent<UIInputBehaviour>();
             input.OnInput += OnInput;
 
             var backgroundContent = new GameObject();
-            var canvasContent = new GameObject();
+            _canvasContent = new GameObject();
 
             backgroundContent.transform.SetParent(gameObject.transform, false);
-            canvasContent.transform.SetParent(gameObject.transform, false);
+            _canvasContent.transform.SetParent(gameObject.transform, false);
 
             var backgroundImage = backgroundContent.AddComponent<Image>();
-            backgroundImage.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
-            backgroundImage.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height - buttonHeight);
+            backgroundImage.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, _width);
+            backgroundImage.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, _height - _buttonHeight);
             backgroundImage.color = _colors.backgroundColor;
 
-            _line = canvasContent.AddComponent<UILine>();
-            _line.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
-            _line.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height - buttonHeight);
-            _line.color = _colors.lineColor;
-            _line.lineThickness = 4;
-
-            var mouseClick = canvasContent.AddComponent<UIMouseClickBehaviour>();
+            var mouseClick = _canvasContent.AddComponent<UIMouseClickBehaviour>();
             mouseClick.OnClick += OnCanvasClick;
 
-            var buttonGroup = new UIHorizontalGroup(container, 510, buttonHeight, new Vector2(0, 0), 5, idx => builder.CreateButtonEx());
-            buttonGroup.gameObject.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -(height - buttonHeight) / 2);
+            var buttonGroup = new UIHorizontalGroup(container, 510, _buttonHeight, new Vector2(0, 0), 4, idx => builder.CreateButtonEx());
+            buttonGroup.gameObject.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -(_height - _buttonHeight) / 2);
             var buttons = buttonGroup.items.Select(o => o.GetComponent<UIDynamicButton>()).ToList();
 
             foreach (var b in buttons)
@@ -87,174 +97,33 @@ namespace CurveEditor.UI
             buttons[0].label = "Mode";
             buttons[1].label = "In Mode";
             buttons[2].label = "Out Mode";
-            buttons[3].label = "Default";
-            buttons[4].label = "Linear";
+            buttons[3].label = "Linear";
 
             buttons[0].button.onClick.AddListener(OnHandleModeButtonClick);
             buttons[1].button.onClick.AddListener(OnInHandleModeButtonClick);
             buttons[2].button.onClick.AddListener(OnOutHandleModeButtonClick);
-            buttons[3].button.onClick.AddListener(SetValToDefault);
-            buttons[4].button.onClick.AddListener(OnSetLinearButtonClick);
-
-            _curve = new AnimationCurve();
-            _defaultKeyframes = new List<Keyframe> { new Keyframe(0, 0, 0, 1), new Keyframe(1, 1, 1, 0) };
-            SetValToDefault();
-        }
-
-        private void UpdateCurve()
-        {
-            var sizeDelta = _line.rectTransform.sizeDelta;
-
-            _points.Sort(new UICurveEditorPointComparer());
-            while (_curve.keys.Length > _points.Count)
-                _curve.RemoveKey(0);
-
-            for (var i = 0; i < _points.Count; i++)
-            {
-                var point = _points[i];
-
-                var position = point.rectTransform.anchoredPosition / sizeDelta;
-
-                var key = new Keyframe(position.x, position.y);
-                key.weightedMode = (WeightedMode)(point.inHandleMode | point.outHandleMode << 1);
-
-                var outPosition = point.outHandlePosition / sizeDelta;
-                var inPosition = point.inHandlePosition / sizeDelta;
-
-                if (Math.Abs(inPosition.x) < 0.0001f)
-                {
-                    key.inTangent = Mathf.Infinity;
-                    key.inWeight = 0f;
-                }
-                else
-                {
-                    key.inTangent = inPosition.y / inPosition.x;
-
-                    var prev = i > 0 ? _points[i - 1] : null;
-                    if (prev != null)
-                    {
-                        var prevPosition = prev.rectTransform.anchoredPosition / sizeDelta;
-                        var dx = position.x - prevPosition.x;
-                        key.inWeight = Mathf.Clamp(Mathf.Abs(inPosition.x / dx), 0f, 1f);
-                    }
-                }
-
-                if (Math.Abs(outPosition.x) < 0.0001f)
-                {
-                    key.outTangent = Mathf.Infinity;
-                    key.outWeight = 0f;
-                }
-                else
-                {
-                    key.outTangent = outPosition.y / outPosition.x;
-
-                    var next = i < _points.Count - 1 ? _points[i + 1] : null;
-                    if (next != null)
-                    {
-                        var nextPosition = next.rectTransform.anchoredPosition / sizeDelta;
-                        var dx = nextPosition.x - position.x;
-                        key.outWeight = Mathf.Clamp(Mathf.Abs(outPosition.x / dx), 0f, 1f);
-                    }
-                }
-
-                if (i >= _curve.keys.Length)
-                    _curve.AddKey(key);
-                else
-                    _curve.MoveKey(i, key);
-            }
-
-            var result = new List<Vector2>();
-            for (var i = 0; i < _evaluateCount; i++)
-            {
-                var t = (float)i / (_evaluateCount - 1);
-                var value = _curve.Evaluate(t);
-                result.Add(new Vector2(t * sizeDelta.x, value * sizeDelta.y));
-            }
-
-            _line.points = result;
-        }
-
-        private void SetPointsFromKeyframes(List<Keyframe> keyframes)
-        {
-            var sizeDelta = _line.rectTransform.sizeDelta;
-
-            while (_points.Count > keyframes.Count)
-                DestroyPoint(_points.First());
-            while (_points.Count < keyframes.Count)
-                CreatePoint(new Vector2());
-
-            for (var i = 0; i < keyframes.Count; i++)
-            {
-                var point = _points[i];
-                var key = keyframes[i];
-                point.rectTransform.anchoredPosition = new Vector2(key.time, key.value) * sizeDelta;
-
-                if (key.inTangent != key.outTangent)
-                    point.handleMode = 1;
-
-                if (((int)key.weightedMode & 1) > 0) point.inHandleMode = 1;
-                if (((int)key.weightedMode & 2) > 0) point.outHandleMode = 1;
-
-                var outHandleNormal = (MathUtils.VectorFromAngle(Mathf.Atan(key.outTangent)) * sizeDelta).normalized;
-                if (point.outHandleMode == 1 && i < keyframes.Count - 1)
-                {
-                    var x = key.outWeight * (keyframes[i + 1].time - key.time) * sizeDelta.x;
-                    var y = x * (outHandleNormal.y / outHandleNormal.x);
-                    var length = Mathf.Sqrt(x * x + y * y);
-                    point.outHandlePosition = outHandleNormal * length;
-                }
-                else
-                {
-                    point.outHandlePosition = outHandleNormal * point.outHandleLength;
-                }
-
-                var inHandleNormal = -(MathUtils.VectorFromAngle(Mathf.Atan(key.inTangent)) * sizeDelta).normalized;
-                if (point.inHandleMode == 1 && i > 0)
-                {
-                    var x = key.inWeight * (key.time - keyframes[i - 1].time) * sizeDelta.x;
-                    var y = x * (inHandleNormal.y / inHandleNormal.x);
-                    var length = Mathf.Sqrt(x * x + y * y);
-                    point.inHandlePosition = inHandleNormal * length;
-                }
-                else
-                {
-                    point.inHandlePosition = inHandleNormal * point.inHandleLength;
-                }
-
-                SetHandleMode(point, point.handleMode);
-                SetOutHandleMode(point, point.outHandleMode);
-                SetInHandleMode(point, point.inHandleMode);
-            }
-
-            UpdateCurve();
+            buttons[3].button.onClick.AddListener(OnSetLinearButtonClick);
         }
 
         private UICurveEditorPoint CreatePoint(Vector2 position)
         {
-            var pointObject = new GameObject();
-            pointObject.transform.SetParent(_line.transform, false);
+            var line = _lines.FirstOrDefault();
+            if (line == null) return null;
+            var point = line.CreatePoint(position);
+            BindPoint(point);
+            return point;
+        }
 
-            var point = pointObject.AddComponent<UICurveEditorPoint>();
-            point.draggingRect = _line.rectTransform;
-            point.color = _colors.pointColor;
-            point.inHandleColor = _colors.inHandleColor;
-            point.outHandleColor = _colors.outHandleColor;
-            point.lineColor = _colors.handleLineColor;
-
+        private void BindPoint(UICurveEditorPoint point)
+        {
             point.OnDragBegin += OnPointBeginDrag;
             point.OnDragging += OnPointDragging;
             point.OnClick += OnPointClick;
-            point.rectTransform.anchoredPosition = position;
-
-            _points.Add(point);
-            return point;
         }
 
         private void DestroyPoint(UICurveEditorPoint point)
         {
-            _points.Remove(point);
-            UnityEngine.Object.Destroy(point.gameObject);
-            UpdateCurve();
+            point.owner.DestroyPoint(point);
         }
 
         private void SetSelectedPoint(UICurveEditorPoint point)
@@ -316,17 +185,17 @@ namespace CurveEditor.UI
                     else if (e.Key == KeyCode.Z)
                     {
                         SetInHandleMode(_selectedPoint, 1 - _selectedPoint.inHandleMode);
-                        UpdateCurve();
+                        _selectedPoint.owner.UpdateCurve();
                     }
                     else if (e.Key == KeyCode.X)
                     {
                         SetOutHandleMode(_selectedPoint, 1 - _selectedPoint.outHandleMode);
-                        UpdateCurve();
+                        _selectedPoint.owner.UpdateCurve();
                     }
                     else if (e.Key == KeyCode.C)
                     {
                         SetHandleMode(_selectedPoint, 1 - _selectedPoint.handleMode);
-                        UpdateCurve();
+                        _selectedPoint.owner.UpdateCurve();
                     }
                 }
             }
@@ -336,12 +205,14 @@ namespace CurveEditor.UI
         {
             if (e.Data.clickCount == 2)
             {
+                var line = _lines.Single();
+
                 Vector2 localPosition;
-                if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(_line.rectTransform, e.Data.position, e.Data.pressEventCamera, out localPosition))
+                if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(line.line.rectTransform, e.Data.position, e.Data.pressEventCamera, out localPosition))
                     return;
 
-                CreatePoint(localPosition + _line.rectTransform.sizeDelta / 2);
-                UpdateCurve();
+                CreatePoint(localPosition + line.line.rectTransform.sizeDelta / 2);
+                line.UpdateCurve();
                 SetSelectedPoint(null);
             }
 
@@ -356,7 +227,7 @@ namespace CurveEditor.UI
                 SetSelectedPoint(p);
         }
 
-        private void OnPointDragging(object sender, UICurveEditorPoint.EventArgs e) => UpdateCurve();
+        private void OnPointDragging(object sender, UICurveEditorPoint.EventArgs e) => _selectedPoint.owner.UpdateCurve();
 
         private void OnPointClick(object sender, UICurveEditorPoint.EventArgs e)
         {
@@ -378,23 +249,25 @@ namespace CurveEditor.UI
             if (_selectedPoint != null)
             {
                 SetHandleMode(_selectedPoint, 1 - _selectedPoint.handleMode);
-                UpdateCurve();
+                _selectedPoint.owner.UpdateCurve();
             }
         }
 
         private void OnOutHandleModeButtonClick()
         {
-            if (_selectedPoint != null) {
+            if (_selectedPoint != null)
+            {
                 SetOutHandleMode(_selectedPoint, 1 - _selectedPoint.outHandleMode);
-                UpdateCurve();
+                _selectedPoint.owner.UpdateCurve();
             }
         }
 
         private void OnInHandleModeButtonClick()
         {
-            if (_selectedPoint != null) {
+            if (_selectedPoint != null)
+            {
                 SetInHandleMode(_selectedPoint, 1 - _selectedPoint.inHandleMode);
-                UpdateCurve();
+                _selectedPoint.owner.UpdateCurve();
             }
         }
 
@@ -403,25 +276,31 @@ namespace CurveEditor.UI
             if (_selectedPoint == null)
                 return;
 
-            var idx = _points.IndexOf(_selectedPoint);
-            var key = _curve.keys[idx];
+            var line = _selectedPoint.owner;
+
+            var idx = line.points.IndexOf(_selectedPoint);
+            var curve = line.curve;
+            var key = curve.keys[idx];
 
             if (idx > 0)
             {
-                var prev = _curve.keys[idx - 1];
+                var prev = curve.keys[idx - 1];
                 prev.outTangent = key.inTangent = (key.value - prev.value) / (key.time - prev.time);
-                _curve.MoveKey(idx - 1, prev);
+                curve.MoveKey(idx - 1, prev);
             }
 
-            if (idx < _curve.keys.Length - 1)
+            if (idx < curve.keys.Length - 1)
             {
-                var next = _curve.keys[idx + 1];
+                var next = curve.keys[idx + 1];
                 next.inTangent = key.outTangent = (next.value - key.value) / (next.time - key.time);
-                _curve.MoveKey(idx + 1, next);
+                curve.MoveKey(idx + 1, next);
             }
 
-            _curve.MoveKey(idx, key);
-            SetPointsFromKeyframes(_curve.keys.ToList());
+            curve.MoveKey(idx, key);
+            foreach (var point in line.SetPointsFromKeyframes(curve.keys.ToList()))
+            {
+                BindPoint(point);
+            }
         }
 
         private bool IsClickOutsidePoint(UICurveEditorPoint point, PointerEventData eventData)
@@ -429,10 +308,12 @@ namespace CurveEditor.UI
             if (point == null)
                 return false;
 
+            var line = point.owner;
+
             Vector2 localPoint;
-            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(_line.rectTransform, eventData.pressPosition, eventData.pressEventCamera, out localPoint))
+            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(line.line.rectTransform, eventData.pressPosition, eventData.pressEventCamera, out localPoint))
             {
-                var p = localPoint + _line.rectTransform.sizeDelta / 2;
+                var p = localPoint + line.line.rectTransform.sizeDelta / 2;
                 var c = point.rectTransform.anchoredPosition;
                 var a = c + point.inHandlePosition;
                 var b = c + point.outHandlePosition;
@@ -442,60 +323,6 @@ namespace CurveEditor.UI
             }
 
             return false;
-        }
-        public override bool StoreJSON(JSONClass jc, bool includePhysical = true, bool includeAppearance = true, bool forceStore = false)
-        {
-            var flag = NeedsStore(jc, includePhysical, includeAppearance) || forceStore;
-            if (flag)
-            {
-                for (var i = 0; i < _curve.keys.Length; i++)
-                {
-                    var k = _curve.keys[i];
-                    jc[name][i] = $"{k.time}, {k.value}, {k.inTangent}, {k.outTangent}, {k.inWeight}, {k.outWeight}, {(int)k.weightedMode}";
-                }
-            }
-
-            return flag;
-        }
-
-        public override void RestoreFromJSON(JSONClass jc, bool restorePhysical = true, bool restoreAppearance = true, bool setMissingToDefault = true)
-        {
-            if (!NeedsRestore(jc, restorePhysical, restoreAppearance))
-                return;
-
-            if (jc[name] != null)
-            {
-                var keyframes = new List<Keyframe>();
-                var array = jc[name].AsArray;
-
-                for (var i = 0; i < array.Count; i++)
-                {
-                    var values = jc[name][i].Value.Split(new[] { ", " }, StringSplitOptions.RemoveEmptyEntries).Select(s => float.Parse(s)).ToArray();
-                    var key = new Keyframe(values[0], values[1], values[2], values[3], values[4], values[5]);
-                    key.weightedMode = (WeightedMode)(int)values[6];
-                    keyframes.Add(key);
-                }
-
-                SetPointsFromKeyframes(keyframes);
-            }
-            else if (setMissingToDefault)
-            {
-                SetValToDefault();
-            }
-        }
-
-        public override void LateRestoreFromJSON(JSONClass jc, bool restorePhysical = true, bool restoreAppearance = true, bool setMissingToDefault = true)
-            => RestoreFromJSON(jc, restorePhysical, restoreAppearance, setMissingToDefault);
-
-        public override void SetDefaultFromCurrent() => _defaultKeyframes = _curve.keys.ToList();
-        public override void SetValToDefault() => SetPointsFromKeyframes(_defaultKeyframes);
-
-        public float Evaluate(float t) => _curve.Evaluate(t);
-
-        private class UICurveEditorPointComparer : IComparer<UICurveEditorPoint>
-        {
-            public int Compare(UICurveEditorPoint x, UICurveEditorPoint y)
-                => Comparer<float>.Default.Compare(x.rectTransform.anchoredPosition.x, y.rectTransform.anchoredPosition.x);
         }
     }
 }

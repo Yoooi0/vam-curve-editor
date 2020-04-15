@@ -13,6 +13,8 @@ namespace CurveEditor.UI
         public event EventHandler<EventArgs> OnDragEnd;
         public event EventHandler<EventArgs> OnDragging;
 
+        public UICurveLine owner;
+
         private float _pointRadius = 10;
         private float _handleRadius = 7;
         private float _outHandleLength = 50;
