@@ -15,19 +15,10 @@ namespace CurveEditor.UI
         public readonly UIDynamic container;
         public readonly GameObject gameObject;
 
-        private Color _pointColor = new Color(0.427f, 0.035f, 0.517f);
-        private Color _selectedPointColor = new Color(0.682f, 0.211f, 0.788f);
-        private Color _handleLineColor = new Color(0, 0, 0);
-        private Color _handleLineColorFree = new Color(0.427f, 0.035f, 0.517f);
-        private Color _inHandleColor = new Color(0, 0, 0);
-        private Color _inHandleColorWeighted = new Color(0.427f, 0.035f, 0.517f);
-        private Color _outHandleColor = new Color(0, 0, 0);
-        private Color _outHandleColorWeighted = new Color(0.427f, 0.035f, 0.517f);
-        private Color _lineColor = new Color(0.9f, 0.9f, 0.9f);
-        private Color _backgroundColor = new Color(0.721f, 0.682f, 0.741f);
 
         private UILine _line;
         private AnimationCurve _curve;
+        private readonly UIColors _colors;
         private UICurveEditorPoint _selectedPoint;
         private List<Keyframe> _defaultKeyframes;
 
@@ -51,6 +42,8 @@ namespace CurveEditor.UI
             this.container = container;
             this.name = name;
 
+            _colors = new UIColors();
+
             gameObject = new GameObject();
             gameObject.transform.SetParent(container.transform, false);
 
@@ -72,12 +65,12 @@ namespace CurveEditor.UI
             var backgroundImage = backgroundContent.AddComponent<Image>();
             backgroundImage.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
             backgroundImage.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height - buttonHeight);
-            backgroundImage.color = _backgroundColor;
+            backgroundImage.color = _colors.backgroundColor;
 
             _line = canvasContent.AddComponent<UILine>();
             _line.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
             _line.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height - buttonHeight);
-            _line.color = _lineColor;
+            _line.color = _colors.lineColor;
             _line.lineThickness = 4;
 
             var mouseClick = canvasContent.AddComponent<UIMouseClickBehaviour>();
@@ -245,10 +238,10 @@ namespace CurveEditor.UI
 
             var point = pointObject.AddComponent<UICurveEditorPoint>();
             point.draggingRect = _line.rectTransform;
-            point.color = _pointColor;
-            point.inHandleColor = _inHandleColor;
-            point.outHandleColor = _outHandleColor;
-            point.lineColor = _handleLineColor;
+            point.color = _colors.pointColor;
+            point.inHandleColor = _colors.inHandleColor;
+            point.outHandleColor = _colors.outHandleColor;
+            point.lineColor = _colors.handleLineColor;
 
             point.OnDragBegin += OnPointBeginDrag;
             point.OnDragging += OnPointDragging;
@@ -270,14 +263,14 @@ namespace CurveEditor.UI
         {
             if (_selectedPoint != null)
             {
-                _selectedPoint.color = _pointColor;
+                _selectedPoint.color = _colors.pointColor;
                 _selectedPoint.showHandles = false;
                 _selectedPoint = null;
             }
 
             if (point != null)
             {
-                point.color = _selectedPointColor;
+                point.color = _colors.selectedPointColor;
                 point.showHandles = true;
                 point.SetVerticesDirty();
 
@@ -291,7 +284,7 @@ namespace CurveEditor.UI
                 return;
 
             point.handleMode = mode;
-            point.lineColor = mode == 0 ? _handleLineColor : _handleLineColorFree;
+            point.lineColor = mode == 0 ? _colors.handleLineColor : _colors.handleLineColorFree;
         }
 
         private void SetOutHandleMode(UICurveEditorPoint point, int mode)
@@ -300,7 +293,7 @@ namespace CurveEditor.UI
                 return;
 
             point.outHandleMode = mode;
-            point.outHandleColor = mode == 0 ? _outHandleColor : _outHandleColorWeighted;
+            point.outHandleColor = mode == 0 ? _colors.outHandleColor : _colors.outHandleColorWeighted;
         }
 
         private void SetInHandleMode(UICurveEditorPoint point, int mode)
@@ -309,7 +302,7 @@ namespace CurveEditor.UI
                 return;
 
             point.inHandleMode = mode;
-            point.inHandleColor = mode == 0 ? _inHandleColor : _inHandleColorWeighted;
+            point.inHandleColor = mode == 0 ? _colors.inHandleColor : _colors.inHandleColorWeighted;
         }
         private void OnInput(object sender, InputEventArgs e)
         {

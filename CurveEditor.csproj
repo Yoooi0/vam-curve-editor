@@ -100,6 +100,7 @@
     <Compile Include="src\UI\Utils\UIMouseClickBehaviour.cs" />
     <Compile Include="src\UI\Utils\UIMouseDragBehaviour.cs" />
     <Compile Include="src\UI\Control\UICircle.cs" />
+    <Compile Include="src\UI\Control\UIColors.cs" />
     <Compile Include="src\UI\UIBuilder.cs" />
     <Compile Include="src\Utils\MathUtils.cs" />
   </ItemGroup>
