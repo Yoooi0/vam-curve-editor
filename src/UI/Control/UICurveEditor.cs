@@ -210,6 +210,9 @@ namespace CurveEditor.UI
             if (_lines.Count == 0)
                 return;
 
+            if (e.Data.dragging)
+                return;
+
             if (e.Data.clickCount > 0 && e.Data.clickCount % 2 == 0)
             {
                 var rectTransform = _linesContainer.GetComponent<RectTransform>();
