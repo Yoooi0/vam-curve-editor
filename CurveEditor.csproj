@@ -91,8 +91,6 @@
     <Compile Include="src\Plugin.cs" />
     <Compile Include="src\IStorableAnimationCurve.cs" />
     <Compile Include="src\JSONStorableAnimationCurve.cs" />
-    <Compile Include="src\UI\Control\UIHorizontalGroup.cs" />
-    <Compile Include="src\UI\IUIBuilder.cs" />
     <Compile Include="src\UI\Utils\InputEventArgs.cs" />
     <Compile Include="src\UI\Utils\PointerEventArgs.cs" />
     <Compile Include="src\UI\Control\UICurveEditor.cs" />
@@ -104,7 +102,6 @@
     <Compile Include="src\UI\Control\UICircle.cs" />
     <Compile Include="src\UI\Control\UIColors.cs" />
     <Compile Include="src\UI\Control\UICurveLine.cs" />
-    <Compile Include="src\UI\UIBuilder.cs" />
     <Compile Include="src\Utils\MathUtils.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
