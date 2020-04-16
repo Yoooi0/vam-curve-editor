@@ -182,7 +182,11 @@ namespace CurveEditor.UI
             foreach (var line in _lines)
                 line.SetSelectedPoint(null);
 
-            point?.owner?.SetSelectedPoint(point);
+            if (point != null)
+            {
+                _lineToContainerMap[point.owner].transform.SetAsLastSibling();
+                point.owner.SetSelectedPoint(point);
+            }
             _selectedPoint = point;
         }
 

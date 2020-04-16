@@ -398,7 +398,7 @@ namespace CurveEditor.UI
 
         public class EventArgs : System.EventArgs
         {
-            public PointerEventData Data { get;}
+            public PointerEventData Data { get; }
             public bool IsPointEvent { get; }
             public bool IsOutHandleEvent { get; }
             public bool IsInHandleEvent { get; }
