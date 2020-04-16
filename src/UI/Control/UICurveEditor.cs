@@ -75,6 +75,9 @@ namespace CurveEditor.UI
 
             this.readOnly = readOnly;
 
+            var mouseClick = _linesContainer.AddComponent<UIMouseClickBehaviour>();
+            mouseClick.OnClick += OnLinesContainerClick;
+
             var lineContainerRectTranform = _linesContainer.AddComponent<RectTransform>();
             lineContainerRectTranform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, _width);
             lineContainerRectTranform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, _height - buttonContainerHeight);
@@ -105,12 +108,6 @@ namespace CurveEditor.UI
         {
             var lineContainer = new GameObject();
             lineContainer.transform.SetParent(_linesContainer.transform, false);
-
-            if (_lines.Count == 0)
-            {
-                var mouseClick = lineContainer.AddComponent<UIMouseClickBehaviour>();
-                mouseClick.OnClick += OnCanvasClick;
-            }
 
             var rectTransform = _linesContainer.GetComponent<RectTransform>();
             var line = lineContainer.AddComponent<UILine>();
@@ -151,12 +148,8 @@ namespace CurveEditor.UI
             BindPoints(line);
         }
 
-        private UICurveEditorPoint CreatePoint(Vector2 position)
+        private UICurveEditorPoint CreatePoint(UICurveLine line, Vector2 position)
         {
-            var line = _lines.FirstOrDefault();
-            if (line == null)
-                return null;
-
             var point = line.CreatePoint(position);
             BindPoint(point);
             return point;
@@ -212,24 +205,27 @@ namespace CurveEditor.UI
             }
         }
 
-        private void OnCanvasClick(object sender, PointerEventArgs e)
+        private void OnLinesContainerClick(object sender, PointerEventArgs e)
         {
             if (_lines.Count == 0)
                 return;
 
             if (e.Data.clickCount > 0 && e.Data.clickCount % 2 == 0)
             {
-                var line = _lines[0];
                 var rectTransform = _linesContainer.GetComponent<RectTransform>();
 
                 Vector2 localPosition;
                 if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(rectTransform, e.Data.position, e.Data.pressEventCamera, out localPosition))
                     return;
 
-                CreatePoint(localPosition + rectTransform.sizeDelta / 2);
-                SetSelectedPoint(null);
+                var pointPosition = localPosition + rectTransform.sizeDelta / 2;
+                var normalizedPosition = pointPosition / rectTransform.sizeDelta;
+                var closestLine = _lines.OrderBy(l => Mathf.Abs(normalizedPosition.y - l.curve.Evaluate(normalizedPosition.x))).FirstOrDefault();
 
-                line.Update();
+                SetSelectedPoint(null);
+                CreatePoint(closestLine, pointPosition);
+
+                closestLine.Update();
             }
 
             if (IsClickOutsidePoint(_selectedPoint, e.Data))
