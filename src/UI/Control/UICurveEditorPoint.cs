@@ -15,8 +15,10 @@ namespace CurveEditor.UI
 
         public UICurveLine owner;
 
-        private float _pointRadius = 10;
+        private float _pointRadius = 8;
+        private float _pointSkin = 10;
         private float _handleRadius = 7;
+        private float _handleSkin = 4;
         private float _outHandleLength = 50;
         private float _inHandleLength = 50;
         private bool _isDraggingPoint = false;
@@ -40,19 +42,46 @@ namespace CurveEditor.UI
         public float pointRadius
         {
             get { return _pointRadius; }
-            set { _pointRadius = value; SetVerticesDirty(); }
+            set 
+            {
+                _pointRadius = value;
+                SetVerticesDirty();
+                UpdateSize();
+            }
         }
 
         public float handlePointRadius
         {
             get { return _handleRadius; }
-            set { _handleRadius = value; SetVerticesDirty(); }
+            set
+            { 
+                _handleRadius = value;
+                SetVerticesDirty();
+                UpdateSize();
+            }
+        }
+
+        public float pointSkin
+        {
+            get { return _pointSkin; }
+            set { _pointSkin = value; UpdateSize(); }
+        }
+
+        public float handleSkin
+        {
+            get { return _handleSkin; }
+            set { _handleSkin = value; UpdateSize(); }
         }
 
         public bool showHandles
         {
             get { return _showHandles; }
-            set { _showHandles = value; SetVerticesDirty(); }
+            set
+            {
+                _showHandles = value;
+                SetVerticesDirty();
+                UpdateSize();
+            }
         }
 
         public int handleMode
@@ -124,6 +153,14 @@ namespace CurveEditor.UI
 
             rectTransform.anchorMin = new Vector2();
             rectTransform.anchorMax = new Vector2();
+            UpdateSize();
+        }
+
+        private void UpdateSize()
+        {
+            var size = showHandles ? (Math.Max(_outHandlePosition.magnitude, _inHandlePosition.magnitude) + _handleRadius + _handleSkin) * 2 : (_pointRadius + _pointSkin) * 2;
+            rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, size);
+            rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, size);
         }
 
         protected UIVertex[] CreateVbo(Vector2[] vertices, Color color)
@@ -143,14 +180,10 @@ namespace CurveEditor.UI
         {
             vh.Clear();
 
-            var size = showHandles ? (Math.Max(_outHandlePosition.magnitude, _inHandlePosition.magnitude) + _handleRadius) * 2 : _pointRadius * 2;
-            rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, size);
-            rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, size);
-
-            DrawLine(vh, new Vector2(-0.5f, 0.5f) * rectTransform.sizeDelta, new Vector2(0.5f, 0.5f) * rectTransform.sizeDelta, 1, Color.black);
-            DrawLine(vh, new Vector2(-0.5f, -0.5f) * rectTransform.sizeDelta, new Vector2(0.5f, -0.5f) * rectTransform.sizeDelta, 1, Color.black);
-            DrawLine(vh, new Vector2(-0.5f, 0.5f) * rectTransform.sizeDelta, new Vector2(-0.5f, -0.5f) * rectTransform.sizeDelta, 1, Color.black);
-            DrawLine(vh, new Vector2(0.5f, 0.5f) * rectTransform.sizeDelta, new Vector2(0.5f, -0.5f) * rectTransform.sizeDelta, 1, Color.black);
+            //DrawLine(vh, new Vector2(-0.5f, 0.5f) * rectTransform.sizeDelta, new Vector2(0.5f, 0.5f) * rectTransform.sizeDelta, 1, Color.black);
+            //DrawLine(vh, new Vector2(-0.5f, -0.5f) * rectTransform.sizeDelta, new Vector2(0.5f, -0.5f) * rectTransform.sizeDelta, 1, Color.black);
+            //DrawLine(vh, new Vector2(-0.5f, 0.5f) * rectTransform.sizeDelta, new Vector2(-0.5f, -0.5f) * rectTransform.sizeDelta, 1, Color.black);
+            //DrawLine(vh, new Vector2(0.5f, 0.5f) * rectTransform.sizeDelta, new Vector2(0.5f, -0.5f) * rectTransform.sizeDelta, 1, Color.black);
 
             if (_showHandles)
             {
@@ -205,20 +238,20 @@ namespace CurveEditor.UI
             Vector2 localPoint;
             if (RectTransformUtility.ScreenPointToLocalPointInRectangle(rectTransform, eventData.pressPosition, eventData.pressEventCamera, out localPoint))
             {
-                if (Vector2.Distance(Vector2.zero, localPoint) <= _pointRadius)
+                if (Vector2.Distance(Vector2.zero, localPoint) <= _pointRadius + _pointSkin)
                 {
                     _isDraggingPoint = true;
                     OnDragBegin?.Invoke(this, new EventArgs(eventData, isPointEvent: true));
                     SetDraggedPosition(eventData);
                 }
-                else if (Vector2.Distance(localPoint, _outHandlePosition) <= _handleRadius)
+                else if (Vector2.Distance(localPoint, _outHandlePosition) <= _handleRadius + _handleSkin)
                 {
                     _isDraggingOutHandle = true;
                     OnDragBegin?.Invoke(this, new EventArgs(eventData, isOutHandleEvent: true));
                     SetDraggedAngle(eventData);
 
                 }
-                else if (Vector2.Distance(localPoint, _inHandlePosition) <= _handleRadius)
+                else if (Vector2.Distance(localPoint, _inHandlePosition) <= _handleRadius + _handleSkin)
                 {
                     _isDraggingInHandle = true;
                     OnDragBegin?.Invoke(this, new EventArgs(eventData, isInHandleEvent: true));
@@ -283,11 +316,11 @@ namespace CurveEditor.UI
             Vector2 localPoint;
             if (RectTransformUtility.ScreenPointToLocalPointInRectangle(rectTransform, eventData.pressPosition, eventData.pressEventCamera, out localPoint))
             {
-                if (Vector2.Distance(Vector2.zero, localPoint) <= _pointRadius)
+                if (Vector2.Distance(Vector2.zero, localPoint) <= _pointRadius + _pointSkin)
                     OnClick?.Invoke(this, new EventArgs(eventData, isPointEvent: true));
-                else if (Vector2.Distance(localPoint, _outHandlePosition) <= _handleRadius)
+                else if (Vector2.Distance(localPoint, _outHandlePosition) <= _handleRadius + _handleSkin)
                     OnClick?.Invoke(this, new EventArgs(eventData, isOutHandleEvent: true));
-                else if (Vector2.Distance(localPoint, _inHandlePosition) <= _handleRadius)
+                else if (Vector2.Distance(localPoint, _inHandlePosition) <= _handleRadius + _handleSkin)
                     OnClick?.Invoke(this, new EventArgs(eventData, isInHandleEvent: true));
                 else
                     return false;
@@ -312,6 +345,8 @@ namespace CurveEditor.UI
                 else
                     _inHandlePosition = -_outHandlePosition.normalized * _inHandlePosition.magnitude;
             }
+
+            UpdateSize();
         }
 
         private void SetInHandlePosition(Vector2 position)
@@ -328,6 +363,8 @@ namespace CurveEditor.UI
                 else
                     _outHandlePosition = -_inHandlePosition.normalized * _outHandlePosition.magnitude;
             }
+
+            UpdateSize();
         }
 
         private void SetDraggedPosition(PointerEventData eventData)
