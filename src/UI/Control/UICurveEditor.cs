@@ -163,6 +163,7 @@ namespace CurveEditor.UI
         private void DestroyPoint(UICurveEditorPoint point)
         {
             point?.owner?.DestroyPoint(point);
+            point?.owner?.Update();
         }
 
         private void SetSelectedPoint(UICurveEditorPoint point)

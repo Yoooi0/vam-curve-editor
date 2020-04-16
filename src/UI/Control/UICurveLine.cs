@@ -199,7 +199,6 @@ namespace CurveEditor.UI
         {
             points.Remove(point);
             UnityEngine.Object.Destroy(point.gameObject);
-            Update();
         }
 
         public void SetSelectedPoint(UICurveEditorPoint point)
