@@ -2,7 +2,6 @@ src\Plugin.cs
 src\IStorableAnimationCurve.cs
 src\JSONStorableAnimationCurve.cs
 src\UI\Control\UIColors.cs
-src\UI\Control\UICircle.cs
 src\UI\Control\UILine.cs
 src\UI\Control\UICurveLine.cs
 src\UI\Control\UICurveEditor.cs
