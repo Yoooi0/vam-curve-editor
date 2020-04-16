@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace CurveEditor.UI
 {
-    public class UILine : MaskableGraphic, IDragHandler
+    public class UILine : MaskableGraphic
     {
         private List<Vector2> _points;
         private Vector2 _margin;
@@ -101,7 +101,5 @@ namespace CurveEditor.UI
             }
             return VboVertices;
         }
-
-        public void OnDrag(PointerEventData eventData) { }
     }
 }

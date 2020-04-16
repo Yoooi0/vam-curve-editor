@@ -13,7 +13,7 @@ namespace CurveEditor
 
         private UICurveEditor _curveEditor;
         private Animation _animation;
-        private JSONStorableAnimationCurve _curveJSON;
+        private JSONStorableAnimationCurve _curveJSON, _curve2JSON;
 
         public override void Init()
         {
@@ -24,6 +24,8 @@ namespace CurveEditor
 
                 _curveJSON = new JSONStorableAnimationCurve("Curve", CurveUpdated);
                 _curveJSON.SetValToDefault();
+                _curve2JSON = new JSONStorableAnimationCurve("Curve", CurveUpdated);
+                _curve2JSON.val = AnimationCurve.Linear(0f, 0.5f, 1f, 0.5f);
 
                 CreateUI();
             }
@@ -63,6 +65,7 @@ namespace CurveEditor
 
             _curveEditor = new UICurveEditor(container, 520, container.height, buttons: curveEditorButtons);
             _curveEditor.AddCurve(_curveJSON, UICurveLineColors.CreateFrom(new Color(0.388f, 0.698f, 0.890f)));
+            _curveEditor.AddCurve(_curve2JSON, UICurveLineColors.CreateFrom(new Color(0.890f, 0.698f, 0.388f)));
 
             var resetButton = CreateButton("Reset");
             var playButton = CreateButton("Play");

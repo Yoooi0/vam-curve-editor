@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace CurveEditor.UI
 {
-    public class UICurveEditorPoint : MaskableGraphic, IDragHandler, IBeginDragHandler, IEndDragHandler, IPointerClickHandler
+    public class UICurveEditorPoint : MaskableGraphic
     {
         public event EventHandler<EventArgs> OnClick;
         public event EventHandler<EventArgs> OnDragBegin;
@@ -143,6 +143,16 @@ namespace CurveEditor.UI
         {
             vh.Clear();
 
+
+            var size = showHandles ? (Math.Max(_outHandlePosition.magnitude, _inHandlePosition.magnitude) + _handleRadius) * 2 : _pointRadius * 2;
+            rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, size);
+            rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, size);
+
+            DrawLine(vh, new Vector2(-0.5f, 0.5f) * rectTransform.sizeDelta, new Vector2(0.5f, 0.5f) * rectTransform.sizeDelta, 1, Color.black);
+            DrawLine(vh, new Vector2(-0.5f, -0.5f) * rectTransform.sizeDelta, new Vector2(0.5f, -0.5f) * rectTransform.sizeDelta, 1, Color.black);
+            DrawLine(vh, new Vector2(-0.5f, 0.5f) * rectTransform.sizeDelta, new Vector2(-0.5f, -0.5f) * rectTransform.sizeDelta, 1, Color.black);
+            DrawLine(vh, new Vector2(0.5f, 0.5f) * rectTransform.sizeDelta, new Vector2(0.5f, -0.5f) * rectTransform.sizeDelta, 1, Color.black);
+
             if (_showHandles)
             {
                 DrawLine(vh, Vector2.zero, _outHandlePosition, 4, _lineColor);
@@ -156,10 +166,6 @@ namespace CurveEditor.UI
                 DrawDot(vh, _outHandlePosition, _handleRadius, _outHandleColor);
                 DrawDot(vh, _inHandlePosition, _handleRadius, _inHandleColor);
             }
-
-            var size = showHandles ? (Math.Max(_outHandlePosition.magnitude, _inHandlePosition.magnitude) + _handleRadius) * 2 : _pointRadius * 2;
-            rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, size);
-            rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, size);
         }
 
         private void DrawDot(VertexHelper vh, Vector2 position, float radius, Color color)
@@ -195,7 +201,7 @@ namespace CurveEditor.UI
             vh.AddUIVertexQuad(CreateVbo(new[] { v1, v2, v3, v4 }, color));
         }
 
-        public void OnBeginDrag(PointerEventData eventData)
+        public bool OnBeginDrag(PointerEventData eventData)
         {
             Vector2 localPoint;
             if (RectTransformUtility.ScreenPointToLocalPointInRectangle(rectTransform, eventData.pressPosition, eventData.pressEventCamera, out localPoint))
@@ -219,10 +225,18 @@ namespace CurveEditor.UI
                     OnDragBegin?.Invoke(this, new EventArgs(eventData, isInHandleEvent: true));
                     SetDraggedAngle(eventData);
                 }
+                else
+                {
+                    return false;
+                }
+
+                return true;
             }
+
+            return false;
         }
 
-        public void OnDrag(PointerEventData eventData)
+        public bool OnDrag(PointerEventData eventData)
         {
             if (_isDraggingPoint)
             {
@@ -239,9 +253,15 @@ namespace CurveEditor.UI
                 SetDraggedAngle(eventData);
                 OnDragging?.Invoke(this, new EventArgs(eventData, isInHandleEvent: true));
             }
+            else
+            {
+                return false;
+            }
+
+            return true;
         }
 
-        public void OnEndDrag(PointerEventData eventData)
+        public bool OnEndDrag(PointerEventData eventData)
         {
             if (_isDraggingPoint)
                 OnDragEnd?.Invoke(this, new EventArgs(eventData, isPointEvent: true));
@@ -249,13 +269,17 @@ namespace CurveEditor.UI
                 OnDragEnd?.Invoke(this, new EventArgs(eventData, isOutHandleEvent: true));
             else if (_isDraggingInHandle)
                 OnDragEnd?.Invoke(this, new EventArgs(eventData, isInHandleEvent: true));
+            else
+                return false;
 
             _isDraggingPoint = false;
             _isDraggingOutHandle = false;
             _isDraggingInHandle = false;
+
+            return true;
         }
 
-        public void OnPointerClick(PointerEventData eventData)
+        public bool OnPointerClick(PointerEventData eventData)
         {
             Vector2 localPoint;
             if (RectTransformUtility.ScreenPointToLocalPointInRectangle(rectTransform, eventData.pressPosition, eventData.pressEventCamera, out localPoint))
@@ -267,9 +291,12 @@ namespace CurveEditor.UI
                 else if (Vector2.Distance(localPoint, _inHandlePosition) <= _handleRadius)
                     OnClick?.Invoke(this, new EventArgs(eventData, isInHandleEvent: true));
                 else
-                    OnClick?.Invoke(this, new EventArgs(eventData));
+                    return false;
+
+                return true;
             }
 
+            return false;
         }
 
         private void SetOutHandlePosition(Vector2 position)

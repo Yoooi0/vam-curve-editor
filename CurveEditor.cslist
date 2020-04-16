@@ -6,6 +6,7 @@ src\UI\Control\UILine.cs
 src\UI\Control\UICurveLine.cs
 src\UI\Control\UICurveEditor.cs
 src\UI\Control\UICurveEditorPoint.cs
+src\UI\Utils\UIRaycastEventsBehaviour.cs
 src\UI\Utils\UIInputBehaviour.cs
 src\UI\Utils\UIMouseDragBehaviour.cs
 src\UI\Utils\UIMouseClickBehaviour.cs

@@ -1,4 +1,4 @@
-using CurveEditor.Utils;
+﻿using CurveEditor.Utils;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -12,6 +12,7 @@ namespace CurveEditor.UI
         public readonly UIDynamic container;
         public readonly GameObject gameObject;
 
+        private readonly GameObject _linesContainer;
         private readonly UICurveEditorColors _colors;
         private readonly List<UICurveLine> _lines;
         private readonly Dictionary<IStorableAnimationCurve, UICurveLine> _storableToLineMap;
@@ -19,12 +20,11 @@ namespace CurveEditor.UI
         private UICurveEditorPoint _selectedPoint;
         private bool _readOnly;
 
-        private GameObject _linesContainer;
-
         public bool readOnly
         {
             get { return _readOnly; }
-            set { 
+            set
+            {
                 _readOnly = value;
 
                 SetSelectedPoint(null);
@@ -67,11 +67,11 @@ namespace CurveEditor.UI
             _linesContainer = new GameObject();
             _linesContainer.transform.SetParent(gameObject.transform, false);
             _linesContainer.AddComponent<CanvasGroup>();
+            
+            var raycastEvents = _linesContainer.AddComponent<UIRaycastEventsBehaviour>();
+            raycastEvents.DefaultOnPointerClick += OnLinesContainerClick;
 
             this.readOnly = readOnly;
-
-            var mouseClick = _linesContainer.AddComponent<UIMouseClickBehaviour>();
-            mouseClick.OnClick += OnLinesContainerClick;
 
             var lineContainerRectTranform = _linesContainer.AddComponent<RectTransform>();
             lineContainerRectTranform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
@@ -155,6 +155,10 @@ namespace CurveEditor.UI
             if (point == null)
                 return;
 
+            point.OnDragBegin -= OnPointBeginDrag;
+            point.OnDragging -= OnPointDragging;
+            point.OnClick -= OnPointClick;
+
             point.OnDragBegin += OnPointBeginDrag;
             point.OnDragging += OnPointDragging;
             point.OnClick += OnPointClick;
@@ -205,6 +209,10 @@ namespace CurveEditor.UI
             if (_lines.Count == 0)
                 return;
 
+            if (e.Data.dragging)
+                return;
+
+            SuperController.LogMessage("LINES");
             if (e.Data.clickCount > 0 && e.Data.clickCount % 2 == 0)
             {
                 var rectTransform = _linesContainer.GetComponent<RectTransform>();
@@ -238,6 +246,7 @@ namespace CurveEditor.UI
 
         private void OnPointClick(object sender, UICurveEditorPoint.EventArgs e)
         {
+            SuperController.LogMessage("POINT");
             var point = sender as UICurveEditorPoint;
             if (!e.Data.dragging)
             {
