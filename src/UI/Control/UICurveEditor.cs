@@ -71,6 +71,7 @@ namespace CurveEditor.UI
             var raycastEvents = _linesContainer.AddComponent<UIRaycastEventsBehaviour>();
             raycastEvents.DefaultOnPointerClick += OnLinesContainerClick;
             raycastEvents.DefaultOnDrag += OnLinesContainerDrag;
+            raycastEvents.DefaultOnEndDrag += OnLinesContainerEndDrag;
 
             this.readOnly = readOnly;
 
@@ -198,22 +199,16 @@ namespace CurveEditor.UI
         {
             if (_selectedPoint != null)
             {
-                if (e.Pressed)
+                if (e.Pressed && e.Key == KeyCode.Delete)
                 {
-                    if (e.Key == KeyCode.Delete)
-                    {
-                        DestroyPoint(_selectedPoint);
-                        SetSelectedPoint(null);
-                    }
+                    DestroyPoint(_selectedPoint);
+                    SetSelectedPoint(null);
                 }
             }
         }
 
         private void OnLinesContainerClick(object sender, PointerEventArgs e)
         {
-            if (_lines.Count == 0)
-                return;
-
             if (e.Data.dragging)
                 return;
 
@@ -235,24 +230,26 @@ namespace CurveEditor.UI
                 closestLine.Update();
             }
 
-            if (IsClickOutsidePoint(_selectedPoint, e.Data))
-                SetSelectedPoint(null);
+            SetSelectedPoint(null);
         }
 
         private void OnLinesContainerDrag(object sender, PointerEventArgs e)
         {
-            if (_lines.Count == 0)
-                return;
-
             if (_selectedPoint?.OnDrag(e.Data) == false)
+                SetSelectedPoint(null);
+        }
+
+        private void OnLinesContainerEndDrag(object sender, PointerEventArgs e)
+        {
+            if (_selectedPoint?.OnEndDrag(e.Data) == false)
                 SetSelectedPoint(null);
         }
 
         private void OnPointBeginDrag(object sender, UICurveEditorPoint.EventArgs e)
         {
-            var p = sender as UICurveEditorPoint;
-            if (_selectedPoint != p)
-                SetSelectedPoint(p);
+            var point = sender as UICurveEditorPoint;
+            if (_selectedPoint != point)
+                SetSelectedPoint(point);
         }
 
         private void OnPointDragging(object sender, UICurveEditorPoint.EventArgs e) => _selectedPoint?.owner?.Update();
@@ -260,18 +257,8 @@ namespace CurveEditor.UI
         private void OnPointClick(object sender, UICurveEditorPoint.EventArgs e)
         {
             var point = sender as UICurveEditorPoint;
-            if (!e.Data.dragging)
-            {
-                if (e.IsPointEvent)
-                {
-                    SetSelectedPoint(point);
-                }
-                else if (!e.IsInHandleEvent && !e.IsOutHandleEvent)
-                {
-                    if (IsClickOutsidePoint(point, e.Data))
-                        SetSelectedPoint(null);
-                }
-            }
+            if (!e.Data.dragging && e.IsPointEvent)
+                SetSelectedPoint(point);
         }
 
         public void ToggleHandleMode()
@@ -328,28 +315,6 @@ namespace CurveEditor.UI
 
             curve.MoveKey(idx, key);
             line.SetPointsFromCurve();
-        }
-
-        private bool IsClickOutsidePoint(UICurveEditorPoint point, PointerEventData eventData)
-        {
-            if (point == null)
-                return false;
-
-            var rectTransform = _linesContainer.GetComponent<RectTransform>();
-
-            Vector2 localPoint;
-            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(rectTransform, eventData.pressPosition, eventData.pressEventCamera, out localPoint))
-            {
-                var p = localPoint + rectTransform.sizeDelta / 2;
-                var c = point.rectTransform.anchoredPosition;
-                var a = c + point.inHandlePosition;
-                var b = c + point.outHandlePosition;
-
-                if (MathUtils.DistanceToLine(p, c, a) > 20 && MathUtils.DistanceToLine(p, c, b) > 20)
-                    return true;
-            }
-
-            return false;
         }
     }
 }

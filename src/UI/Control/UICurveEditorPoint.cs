@@ -258,7 +258,7 @@ namespace CurveEditor.UI
                 }
                 else
                 {
-                    return false;
+                    return !IsEventOutside(eventData);
                 }
 
                 return true;
@@ -286,7 +286,7 @@ namespace CurveEditor.UI
             }
             else
             {
-                return false;
+                return !IsEventOutside(eventData);
             }
 
             return true;
@@ -301,7 +301,7 @@ namespace CurveEditor.UI
             else if (_isDraggingInHandle)
                 OnDragEnd?.Invoke(this, new EventArgs(eventData, isInHandleEvent: true));
             else
-                return false;
+                return !IsEventOutside(eventData);
 
             _isDraggingPoint = false;
             _isDraggingOutHandle = false;
@@ -322,7 +322,7 @@ namespace CurveEditor.UI
                 else if (Vector2.Distance(localPoint, _inHandlePosition) <= _handleRadius + _handleSkin)
                     OnClick?.Invoke(this, new EventArgs(eventData, isInHandleEvent: true));
                 else
-                    return false;
+                    return !IsEventOutside(eventData);
 
                 return true;
             }
@@ -394,6 +394,17 @@ namespace CurveEditor.UI
 
                 SetVerticesDirty();
             }
+        }
+
+        private bool IsEventOutside(PointerEventData eventData)
+        {
+            Vector2 localPoint;
+            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(rectTransform, eventData.pressPosition, eventData.pressEventCamera, out localPoint))
+                if (MathUtils.DistanceToLine(localPoint, Vector2.zero, _inHandlePosition) > 20
+                 && MathUtils.DistanceToLine(localPoint, Vector2.zero, _outHandlePosition) > 20)
+                    return true;
+
+            return false;
         }
 
         public class EventArgs : System.EventArgs
