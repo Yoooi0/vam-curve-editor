@@ -1,4 +1,4 @@
-﻿using CurveEditor.Utils;
+using CurveEditor.Utils;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -19,10 +19,24 @@ namespace CurveEditor.UI
         private readonly Dictionary<IStorableAnimationCurve, UICurveLine> _storableToLineMap;
         private readonly Dictionary<UICurveLine, GameObject> _lineToContainerMap;
         private UICurveEditorPoint _selectedPoint;
+        private bool _readOnly;
 
         private GameObject _linesContainer;
 
-        public UICurveEditor(UIDynamic container, float width, float height, List<UIDynamicButton> buttons = null, UICurveEditorColors colors = null)
+        public bool readOnly
+        {
+            get { return _readOnly; }
+            set { 
+                _readOnly = value;
+
+                SetSelectedPoint(null);
+                var canvasGroup = _linesContainer.GetComponent<CanvasGroup>();
+                canvasGroup.interactable = !value;
+                canvasGroup.blocksRaycasts = !value;
+            }
+        }
+
+        public UICurveEditor(UIDynamic container, float width, float height, List<UIDynamicButton> buttons = null, UICurveEditorColors colors = null, bool readOnly = false)
         {
             var buttonContainerHeight = (buttons == null || buttons.Count == 0) ? 0 : 25;
 
@@ -57,6 +71,10 @@ namespace CurveEditor.UI
 
             _linesContainer = new GameObject();
             _linesContainer.transform.SetParent(gameObject.transform, false);
+            _linesContainer.AddComponent<CanvasGroup>();
+
+            this.readOnly = readOnly;
+
             var lineContainerRectTranform = _linesContainer.AddComponent<RectTransform>();
             lineContainerRectTranform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, _width);
             lineContainerRectTranform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, _height - buttonContainerHeight);

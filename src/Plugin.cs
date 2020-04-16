@@ -81,6 +81,10 @@ namespace CurveEditor
             {
                 _animation.Stop();
             });
+
+            var readOnlyStorable = new JSONStorableBool("ReadOnly", false);
+            var readOnlyToggle = CreateToggle(readOnlyStorable);
+            readOnlyStorable.setCallbackFunction = v => _curveEditor.readOnly = v;
         }
 
         protected void Update() { }
