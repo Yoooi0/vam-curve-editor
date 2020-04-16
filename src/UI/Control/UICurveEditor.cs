@@ -212,7 +212,6 @@ namespace CurveEditor.UI
             if (e.Data.dragging)
                 return;
 
-            SuperController.LogMessage("LINES");
             if (e.Data.clickCount > 0 && e.Data.clickCount % 2 == 0)
             {
                 var rectTransform = _linesContainer.GetComponent<RectTransform>();
@@ -246,7 +245,6 @@ namespace CurveEditor.UI
 
         private void OnPointClick(object sender, UICurveEditorPoint.EventArgs e)
         {
-            SuperController.LogMessage("POINT");
             var point = sender as UICurveEditorPoint;
             if (!e.Data.dragging)
             {

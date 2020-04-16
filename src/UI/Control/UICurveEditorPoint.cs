@@ -143,7 +143,6 @@ namespace CurveEditor.UI
         {
             vh.Clear();
 
-
             var size = showHandles ? (Math.Max(_outHandlePosition.magnitude, _inHandlePosition.magnitude) + _handleRadius) * 2 : _pointRadius * 2;
             rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, size);
             rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, size);
