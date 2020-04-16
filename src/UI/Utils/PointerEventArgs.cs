@@ -5,7 +5,7 @@ namespace CurveEditor.UI
 {
     public class PointerEventArgs : EventArgs
     {
-        public PointerEventData Data { get; private set; }
+        public PointerEventData Data { get; }
         public PointerEventArgs(PointerEventData data) { Data = data; }
     }
 }

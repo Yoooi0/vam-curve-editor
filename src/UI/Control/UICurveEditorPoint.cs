@@ -42,7 +42,7 @@ namespace CurveEditor.UI
         public float pointRadius
         {
             get { return _pointRadius; }
-            set 
+            set
             {
                 _pointRadius = value;
                 SetVerticesDirty();
@@ -54,7 +54,7 @@ namespace CurveEditor.UI
         {
             get { return _handleRadius; }
             set
-            { 
+            {
                 _handleRadius = value;
                 SetVerticesDirty();
                 UpdateSize();
@@ -202,7 +202,7 @@ namespace CurveEditor.UI
 
         private void DrawDot(VertexHelper vh, Vector2 position, float radius, Color color)
         {
-            var segments = 10;
+            const int segments = 10;
             var prev = position;
             for (var i = 0; i < segments + 1; i++)
             {
@@ -249,7 +249,6 @@ namespace CurveEditor.UI
                     _isDraggingOutHandle = true;
                     OnDragBegin?.Invoke(this, new EventArgs(eventData, isOutHandleEvent: true));
                     SetDraggedAngle(eventData);
-
                 }
                 else if (Vector2.Distance(localPoint, _inHandlePosition) <= _handleRadius + _handleSkin)
                 {
@@ -399,11 +398,10 @@ namespace CurveEditor.UI
 
         public class EventArgs : System.EventArgs
         {
-            public PointerEventData Data { get; private set; }
-            public Vector2? LocalPosition { get; private set; }
-            public bool IsPointEvent { get; private set; }
-            public bool IsOutHandleEvent { get; private set; }
-            public bool IsInHandleEvent { get; private set; }
+            public PointerEventData Data { get;}
+            public bool IsPointEvent { get; }
+            public bool IsOutHandleEvent { get; }
+            public bool IsInHandleEvent { get; }
 
             public EventArgs(PointerEventData data, bool isPointEvent = false, bool isOutHandleEvent = false, bool isInHandleEvent = false)
             {

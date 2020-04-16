@@ -220,7 +220,6 @@ namespace CurveEditor.UI
             }
         }
 
-
         public void SetHandleMode(UICurveEditorPoint point, int mode)
         {
             point.handleMode = mode;

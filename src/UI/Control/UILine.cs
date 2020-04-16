@@ -1,7 +1,6 @@
 ﻿using CurveEditor.Utils;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace CurveEditor.UI
@@ -50,7 +49,6 @@ namespace CurveEditor.UI
                 sizeX = 1;
                 sizeY = 1;
             }
-
 
             sizeX -= _margin.x;
             sizeY -= _margin.y;

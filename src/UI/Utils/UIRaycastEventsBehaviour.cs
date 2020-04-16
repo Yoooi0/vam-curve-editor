@@ -55,7 +55,5 @@ namespace CurveEditor.UI
 
             DefaultOnEndDrag?.Invoke(this, new PointerEventArgs(eventData));
         }
-
     }
-
 }

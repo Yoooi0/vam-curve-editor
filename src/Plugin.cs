@@ -43,7 +43,7 @@ namespace CurveEditor
             container.height = 300;
 
             var curveEditorButtons = Enumerable.Range(0, 4)
-                .Select(i => UnityEngine.Object.Instantiate(manager.configurableButtonPrefab))
+                .Select(_ => UnityEngine.Object.Instantiate(manager.configurableButtonPrefab))
                 .Select(t => t.GetComponent<UIDynamicButton>())
                 .ToList();
 
@@ -91,7 +91,7 @@ namespace CurveEditor
         }
 
         protected void Update() { }
-        protected void OnDestroy() 
+        protected void OnDestroy()
         {
             if (_animation != null)
                 GameObject.Destroy(_animation);

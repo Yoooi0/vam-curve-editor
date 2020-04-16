@@ -67,7 +67,7 @@ namespace CurveEditor.UI
             _linesContainer = new GameObject();
             _linesContainer.transform.SetParent(gameObject.transform, false);
             _linesContainer.AddComponent<CanvasGroup>();
-            
+
             var raycastEvents = _linesContainer.AddComponent<UIRaycastEventsBehaviour>();
             raycastEvents.DefaultOnPointerClick += OnLinesContainerClick;
             raycastEvents.DefaultOnDrag += OnLinesContainerDrag;
@@ -240,7 +240,7 @@ namespace CurveEditor.UI
             if (_lines.Count == 0)
                 return;
 
-            if (_selectedPoint != null && !_selectedPoint.OnDrag(e.Data))
+            if (_selectedPoint?.OnDrag(e.Data) == false)
                 SetSelectedPoint(null);
         }
 
