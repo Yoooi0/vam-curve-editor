@@ -70,6 +70,7 @@ namespace CurveEditor.UI
             
             var raycastEvents = _linesContainer.AddComponent<UIRaycastEventsBehaviour>();
             raycastEvents.DefaultOnPointerClick += OnLinesContainerClick;
+            raycastEvents.DefaultOnDrag += OnLinesContainerDrag;
 
             this.readOnly = readOnly;
 
@@ -209,9 +210,6 @@ namespace CurveEditor.UI
             if (_lines.Count == 0)
                 return;
 
-            if (e.Data.dragging)
-                return;
-
             if (e.Data.clickCount > 0 && e.Data.clickCount % 2 == 0)
             {
                 var rectTransform = _linesContainer.GetComponent<RectTransform>();
@@ -231,6 +229,15 @@ namespace CurveEditor.UI
             }
 
             if (IsClickOutsidePoint(_selectedPoint, e.Data))
+                SetSelectedPoint(null);
+        }
+
+        private void OnLinesContainerDrag(object sender, PointerEventArgs e)
+        {
+            if (_lines.Count == 0)
+                return;
+
+            if (_selectedPoint != null && !_selectedPoint.OnDrag(e.Data))
                 SetSelectedPoint(null);
         }
 
