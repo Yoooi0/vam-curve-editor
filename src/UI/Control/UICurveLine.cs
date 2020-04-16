@@ -6,29 +6,59 @@ namespace CurveEditor.UI
 {
     public class UICurveLine
     {
-        public UILine line { get; set; }
-        public IStorableAnimationCurve storable { get; set; }
-        public AnimationCurve curve => storable.val;
-        public List<UICurveEditorPoint> points { get; } = new List<UICurveEditorPoint>();
-        private readonly UIColors _colors;
-        private int _evaluateCount = 200;
+        private readonly UILine _line;
+        private readonly IStorableAnimationCurve _storable;
+        private readonly UICurveLineColors _colors;
+        private int _evaluateCount;
+        private UICurveEditorPoint _selectedPoint;
+
+        public readonly List<UICurveEditorPoint> points;
+
+        public AnimationCurve curve => _storable.val;
 
         public int evaluateCount
         {
             get { return _evaluateCount; }
-            set { _evaluateCount = value; UpdateCurve(); }
+            set { _evaluateCount = value; RedrawLine(); }
         }
 
-        public UICurveLine(IStorableAnimationCurve storable, UILine line, UIColors colors)
+        public UICurveLine(IStorableAnimationCurve storable, UILine line, UICurveLineColors colors = null)
         {
-            this.storable = storable;
-            this.line = line;
-            _colors = colors;
+            points = new List<UICurveEditorPoint>();
+
+            _storable = storable;
+            _line = line;
+            _colors = colors ?? new UICurveLineColors();
+            _evaluateCount = 200;
+
+            _line.color = _colors.lineColor;
+
+            SetPointsFromCurve();
         }
 
-        public void UpdateCurve()
+        public void Update()
         {
-            var sizeDelta = line.rectTransform.sizeDelta;
+            SetCurveFromPoints();
+            RedrawLine();
+        }
+
+        public void RedrawLine()
+        {
+            var sizeDelta = _line.rectTransform.sizeDelta;
+            var result = new List<Vector2>();
+            for (var i = 0; i < _evaluateCount; i++)
+            {
+                var t = (float)i / (_evaluateCount - 1);
+                var value = curve.Evaluate(t);
+                result.Add(new Vector2(t * sizeDelta.x, value * sizeDelta.y));
+            }
+
+            _line.points = result;
+        }
+
+        public void SetCurveFromPoints()
+        {
+            var sizeDelta = _line.rectTransform.sizeDelta;
 
             points.Sort(new UICurveEditorPointComparer());
             while (curve.length > points.Count)
@@ -88,22 +118,12 @@ namespace CurveEditor.UI
                     curve.MoveKey(i, key);
             }
 
-            var result = new List<Vector2>();
-            for (var i = 0; i < _evaluateCount; i++)
-            {
-                var t = (float)i / (_evaluateCount - 1);
-                var value = curve.Evaluate(t);
-                result.Add(new Vector2(t * sizeDelta.x, value * sizeDelta.y));
-            }
-
-            line.points = result;
-
-            storable.NotifyUpdated();
+            _storable.NotifyUpdated();
         }
 
-        public IList<UICurveEditorPoint> SetPointsFromCurve()
+        public void SetPointsFromCurve()
         {
-            var sizeDelta = line.rectTransform.sizeDelta;
+            var sizeDelta = _line.rectTransform.sizeDelta;
 
             while (points.Count > curve.length)
                 DestroyPoint(points[0]);
@@ -153,19 +173,17 @@ namespace CurveEditor.UI
                 SetInHandleMode(point, point.inHandleMode);
             }
 
-            UpdateCurve();
-
-            return points;
+            RedrawLine();
         }
 
         public UICurveEditorPoint CreatePoint(Vector2 position)
         {
             var pointObject = new GameObject();
-            pointObject.transform.SetParent(line.transform, false);
+            pointObject.transform.SetParent(_line.transform, false);
 
             var point = pointObject.AddComponent<UICurveEditorPoint>();
             point.owner = this;
-            point.draggingRect = line.rectTransform;
+            point.draggingRect = _line.rectTransform;
             point.color = _colors.pointColor;
             point.inHandleColor = _colors.inHandleColor;
             point.outHandleColor = _colors.outHandleColor;
@@ -174,7 +192,6 @@ namespace CurveEditor.UI
             point.rectTransform.anchoredPosition = position;
 
             points.Add(point);
-
             return point;
         }
 
@@ -182,7 +199,25 @@ namespace CurveEditor.UI
         {
             points.Remove(point);
             UnityEngine.Object.Destroy(point.gameObject);
-            UpdateCurve();
+        }
+
+        public void SetSelectedPoint(UICurveEditorPoint point)
+        {
+            if (_selectedPoint != null)
+            {
+                _selectedPoint.color = _colors.pointColor;
+                _selectedPoint.showHandles = false;
+                _selectedPoint = null;
+            }
+
+            if (point != null)
+            {
+                point.color = _colors.selectedPointColor;
+                point.showHandles = true;
+                point.SetVerticesDirty();
+
+                _selectedPoint = point;
+            }
         }
 
         public void SetHandleMode(UICurveEditorPoint point, int mode)
