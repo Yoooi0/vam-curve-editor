@@ -1,14 +1,13 @@
 using CurveEditor.UI;
 using SimpleJSON;
 using System;
+using System.Linq;
 using UnityEngine;
 
 namespace CurveEditor
 {
     public partial class Plugin : MVRScript
     {
-        private UIBuilder _builder;
-
         public static readonly string PluginName = "Curve Editor Demo";
         public static readonly string PluginAuthor = "Yoooi";
 
@@ -34,25 +33,51 @@ namespace CurveEditor
             }
         }
 
-
         public void CreateUI()
         {
             pluginLabelJSON.val = PluginName;
 
-            _builder = new UIBuilder(this);
+            var container = CreateSpacer();
+            container.height = 300;
 
-            _curveEditor = _builder.CreateCurveEditor(300);
+            var curveEditorButtons = Enumerable.Range(0, 4)
+                .Select(i => UnityEngine.Object.Instantiate(manager.configurableButtonPrefab))
+                .Select(t => t.GetComponent<UIDynamicButton>())
+                .ToList();
+
+            foreach (var b in curveEditorButtons)
+            {
+                b.buttonText.fontSize = 18;
+                b.buttonColor = Color.white;
+            }
+
+            curveEditorButtons[0].label = "Mode";
+            curveEditorButtons[1].label = "In Mode";
+            curveEditorButtons[2].label = "Out Mode";
+            curveEditorButtons[3].label = "Linear";
+
+            curveEditorButtons[0].button.onClick.AddListener(() => _curveEditor.ToggleHandleMode());
+            curveEditorButtons[1].button.onClick.AddListener(() => _curveEditor.ToggleInHandleMode());
+            curveEditorButtons[2].button.onClick.AddListener(() => _curveEditor.ToggleOutHandleMode());
+            curveEditorButtons[3].button.onClick.AddListener(() => _curveEditor.SetLinear());
+
+            _curveEditor = new UICurveEditor(container, 520, container.height, buttons: curveEditorButtons);
             _curveEditor.AddCurve(_curveJSON, UICurveLineColors.CreateFrom(new Color(0.388f, 0.698f, 0.890f)));
-            _builder.CreateButton("Reset", () =>
+
+            var resetButton = CreateButton("Reset");
+            var playButton = CreateButton("Play");
+            var stopButton = CreateButton("Stop");
+
+            resetButton.button.onClick.AddListener(() =>
             {
                 _curveJSON.SetValToDefault();
                 _curveEditor.UpdateCurve(_curveJSON);
             });
-            _builder.CreateButton("Play", () =>
+            playButton.button.onClick.AddListener(() =>
             {
                 _animation.Play("CurveEditorDemo");
             });
-            _builder.CreateButton("Stop", () =>
+            stopButton.button.onClick.AddListener(() =>
             {
                 _animation.Stop();
             });
@@ -63,6 +88,7 @@ namespace CurveEditor
         {
             if (_animation != null)
                 GameObject.Destroy(_animation);
+            RemoveSpacer(_curveEditor.container);
         }
 
         private void CurveUpdated(AnimationCurve curve)

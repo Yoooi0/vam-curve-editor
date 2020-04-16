@@ -9,8 +9,6 @@ namespace CurveEditor.UI
 {
     public class UICurveEditor
     {
-        private const float _buttonHeight = 25;
-
         public readonly UIDynamic container;
         public readonly GameObject gameObject;
 
@@ -24,8 +22,10 @@ namespace CurveEditor.UI
 
         private GameObject _linesContainer;
 
-        public UICurveEditor(IUIBuilder builder, UIDynamic container, float width, float height, UICurveEditorColors colors = null)
+        public UICurveEditor(UIDynamic container, float width, float height, List<UIDynamicButton> buttons = null, UICurveEditorColors colors = null)
         {
+            var buttonContainerHeight = (buttons == null || buttons.Count == 0) ? 0 : 25;
+
             this.container = container;
 
             _storableToLineMap = new Dictionary<IStorableAnimationCurve, UICurveLine>();
@@ -40,9 +40,9 @@ namespace CurveEditor.UI
             gameObject.transform.SetParent(container.transform, false);
 
             var mask = gameObject.AddComponent<RectMask2D>();
-            mask.rectTransform.anchoredPosition = new Vector2(0, _buttonHeight / 2);
+            mask.rectTransform.anchoredPosition = new Vector2(0, buttonContainerHeight / 2);
             mask.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, _width);
-            mask.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, _height - _buttonHeight);
+            mask.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, _height - buttonContainerHeight);
 
             var input = gameObject.AddComponent<UIInputBehaviour>();
             input.OnInput += OnInput;
@@ -52,34 +52,35 @@ namespace CurveEditor.UI
 
             var backgroundImage = backgroundContent.AddComponent<Image>();
             backgroundImage.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, _width);
-            backgroundImage.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, _height - _buttonHeight);
+            backgroundImage.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, _height - buttonContainerHeight);
             backgroundImage.color = _colors.backgroundColor;
 
             _linesContainer = new GameObject();
             _linesContainer.transform.SetParent(gameObject.transform, false);
             var lineContainerRectTranform = _linesContainer.AddComponent<RectTransform>();
             lineContainerRectTranform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, _width);
-            lineContainerRectTranform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, _height - _buttonHeight);
+            lineContainerRectTranform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, _height - buttonContainerHeight);
 
-            var buttonGroup = new UIHorizontalGroup(container, 510, _buttonHeight, new Vector2(0, 0), 4, idx => builder.CreateButtonEx());
-            buttonGroup.gameObject.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -(_height - _buttonHeight) / 2);
-            var buttons = buttonGroup.items.Select(o => o.GetComponent<UIDynamicButton>()).ToList();
-
-            foreach (var b in buttons)
+            if (buttons != null && buttons.Count != 0)
             {
-                b.buttonText.fontSize = 18;
-                b.buttonColor = Color.white;
+                var buttonContainer = new GameObject();
+                buttonContainer.transform.SetParent(container.transform, false);
+
+                var rectTransform = buttonContainer.AddComponent<RectTransform>();
+                rectTransform.anchoredPosition = new Vector2(0, -(_height - buttonContainerHeight) / 2);
+                rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
+                rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, buttonContainerHeight);
+
+                var gridLayout = buttonContainer.AddComponent<GridLayoutGroup>();
+                gridLayout.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+                gridLayout.constraintCount = buttons.Count;
+                gridLayout.spacing = new Vector2();
+                gridLayout.cellSize = new Vector2(width / buttons.Count, buttonContainerHeight);
+                gridLayout.childAlignment = TextAnchor.MiddleCenter;
+
+                foreach(var button in buttons)
+                    button.gameObject.transform.SetParent(gridLayout.transform, false);
             }
-
-            buttons[0].label = "Mode";
-            buttons[1].label = "In Mode";
-            buttons[2].label = "Out Mode";
-            buttons[3].label = "Linear";
-
-            buttons[0].button.onClick.AddListener(OnHandleModeButtonClick);
-            buttons[1].button.onClick.AddListener(OnInHandleModeButtonClick);
-            buttons[2].button.onClick.AddListener(OnOutHandleModeButtonClick);
-            buttons[3].button.onClick.AddListener(OnSetLinearButtonClick);
         }
 
         public UICurveLine AddCurve(IStorableAnimationCurve storable, UICurveLineColors colors = null, float thickness = 4)
@@ -242,7 +243,7 @@ namespace CurveEditor.UI
             }
         }
 
-        private void OnHandleModeButtonClick()
+        public void ToggleHandleMode()
         {
             if (_selectedPoint != null)
             {
@@ -251,7 +252,7 @@ namespace CurveEditor.UI
             }
         }
 
-        private void OnOutHandleModeButtonClick()
+        public void ToggleOutHandleMode()
         {
             if (_selectedPoint != null)
             {
@@ -260,7 +261,7 @@ namespace CurveEditor.UI
             }
         }
 
-        private void OnInHandleModeButtonClick()
+        public void ToggleInHandleMode()
         {
             if (_selectedPoint != null)
             {
@@ -269,7 +270,7 @@ namespace CurveEditor.UI
             }
         }
 
-        private void OnSetLinearButtonClick()
+        public void SetLinear()
         {
             if (_selectedPoint == null)
                 return;
