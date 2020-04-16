@@ -104,6 +104,7 @@ namespace CurveEditor.UI
             _storableToLineMap.Add(storable, curveLine);
             _lineToContainerMap.Add(curveLine, lineContainer);
 
+            BindPoints(curveLine);
             return curveLine;
         }
 
@@ -128,8 +129,7 @@ namespace CurveEditor.UI
                 return;
 
             line.SetPointsFromCurve();
-            foreach (var point in line.points)
-                BindPoint(point);
+            BindPoints(line);
         }
 
         private UICurveEditorPoint CreatePoint(Vector2 position)
@@ -151,6 +151,12 @@ namespace CurveEditor.UI
             point.OnDragBegin += OnPointBeginDrag;
             point.OnDragging += OnPointDragging;
             point.OnClick += OnPointClick;
+        }
+
+        private void BindPoints(UICurveLine line)
+        {
+            foreach (var point in line.points)
+                BindPoint(point);
         }
 
         private void DestroyPoint(UICurveEditorPoint point)
