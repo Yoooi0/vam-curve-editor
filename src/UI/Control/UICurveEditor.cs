@@ -12,8 +12,6 @@ namespace CurveEditor.UI
         public readonly UIDynamic container;
         public readonly GameObject gameObject;
 
-        private readonly float _width;
-        private readonly float _height;
         private readonly UICurveEditorColors _colors;
         private readonly List<UICurveLine> _lines;
         private readonly Dictionary<IStorableAnimationCurve, UICurveLine> _storableToLineMap;
@@ -47,16 +45,13 @@ namespace CurveEditor.UI
             _lines = new List<UICurveLine>();
             _colors = colors ?? new UICurveEditorColors();
 
-            _width = width;
-            _height = height;
-
             gameObject = new GameObject();
             gameObject.transform.SetParent(container.transform, false);
 
             var mask = gameObject.AddComponent<RectMask2D>();
             mask.rectTransform.anchoredPosition = new Vector2(0, buttonContainerHeight / 2);
-            mask.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, _width);
-            mask.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, _height - buttonContainerHeight);
+            mask.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
+            mask.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height - buttonContainerHeight);
 
             var input = gameObject.AddComponent<UIInputBehaviour>();
             input.OnInput += OnInput;
@@ -65,8 +60,8 @@ namespace CurveEditor.UI
             backgroundContent.transform.SetParent(gameObject.transform, false);
 
             var backgroundImage = backgroundContent.AddComponent<Image>();
-            backgroundImage.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, _width);
-            backgroundImage.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, _height - buttonContainerHeight);
+            backgroundImage.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
+            backgroundImage.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height - buttonContainerHeight);
             backgroundImage.color = _colors.backgroundColor;
 
             _linesContainer = new GameObject();
@@ -79,8 +74,8 @@ namespace CurveEditor.UI
             mouseClick.OnClick += OnLinesContainerClick;
 
             var lineContainerRectTranform = _linesContainer.AddComponent<RectTransform>();
-            lineContainerRectTranform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, _width);
-            lineContainerRectTranform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, _height - buttonContainerHeight);
+            lineContainerRectTranform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
+            lineContainerRectTranform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height - buttonContainerHeight);
 
             if (buttons != null && buttons.Count != 0)
             {
@@ -88,7 +83,7 @@ namespace CurveEditor.UI
                 buttonContainer.transform.SetParent(container.transform, false);
 
                 var rectTransform = buttonContainer.AddComponent<RectTransform>();
-                rectTransform.anchoredPosition = new Vector2(0, -(_height - buttonContainerHeight) / 2);
+                rectTransform.anchoredPosition = new Vector2(0, -(height - buttonContainerHeight) / 2);
                 rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
                 rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, buttonContainerHeight);
 
