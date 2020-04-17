@@ -88,21 +88,21 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="src\Plugin.cs" />
-    <Compile Include="src\IStorableAnimationCurve.cs" />
-    <Compile Include="src\JSONStorableAnimationCurve.cs" />
-    <Compile Include="src\UI\Utils\InputEventArgs.cs" />
-    <Compile Include="src\UI\Utils\PointerEventArgs.cs" />
-    <Compile Include="src\UI\Control\UICurveEditor.cs" />
-    <Compile Include="src\UI\Control\UICurveEditorPoint.cs" />
-    <Compile Include="src\UI\Utils\UIInputBehaviour.cs" />
-    <Compile Include="src\UI\Control\UILine.cs" />
-    <Compile Include="src\UI\Utils\UIMouseClickBehaviour.cs" />
-    <Compile Include="src\UI\Utils\UIMouseDragBehaviour.cs" />
-    <Compile Include="src\UI\Control\UIColors.cs" />
-    <Compile Include="src\UI\Control\UICurveLine.cs" />
-    <Compile Include="src\UI\Utils\UIRaycastEventsBehaviour.cs" />
-    <Compile Include="src\Utils\MathUtils.cs" />
+    <Compile Include="Plugin.cs" />
+    <Compile Include="IStorableAnimationCurve.cs" />
+    <Compile Include="JSONStorableAnimationCurve.cs" />
+    <Compile Include="UI\Utils\InputEventArgs.cs" />
+    <Compile Include="UI\Utils\PointerEventArgs.cs" />
+    <Compile Include="UI\Control\UICurveEditor.cs" />
+    <Compile Include="UI\Control\UICurveEditorPoint.cs" />
+    <Compile Include="UI\Utils\UIInputBehaviour.cs" />
+    <Compile Include="UI\Control\UILine.cs" />
+    <Compile Include="UI\Utils\UIMouseClickBehaviour.cs" />
+    <Compile Include="UI\Utils\UIMouseDragBehaviour.cs" />
+    <Compile Include="UI\Control\UIColors.cs" />
+    <Compile Include="UI\Control\UICurveLine.cs" />
+    <Compile Include="UI\Utils\UIRaycastEventsBehaviour.cs" />
+    <Compile Include="Utils\MathUtils.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
