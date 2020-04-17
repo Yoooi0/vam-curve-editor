@@ -91,6 +91,7 @@
     <Compile Include="Plugin.cs" />
     <Compile Include="IStorableAnimationCurve.cs" />
     <Compile Include="JSONStorableAnimationCurve.cs" />
+    <Compile Include="UI\Control\UIScrubber.cs" />
     <Compile Include="UI\Utils\InputEventArgs.cs" />
     <Compile Include="UI\Utils\PointerEventArgs.cs" />
     <Compile Include="UI\Control\UICurveEditor.cs" />
