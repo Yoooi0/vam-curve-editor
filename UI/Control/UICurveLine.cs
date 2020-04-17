@@ -7,6 +7,7 @@ namespace CurveEditor.UI
     public class UICurveLine
     {
         private readonly UILine _line;
+        private readonly UIScrubber _scrubber;
         private readonly IStorableAnimationCurve _storable;
         private readonly UICurveLineColors _colors;
         private int _evaluateCount;
@@ -22,16 +23,18 @@ namespace CurveEditor.UI
             set { _evaluateCount = value; RedrawLine(); }
         }
 
-        public UICurveLine(IStorableAnimationCurve storable, UILine line, UICurveLineColors colors = null)
+        public UICurveLine(IStorableAnimationCurve storable, UILine line, UIScrubber scrubber, UICurveLineColors colors = null)
         {
             points = new List<UICurveEditorPoint>();
 
             _storable = storable;
             _line = line;
+            _scrubber = scrubber;
             _colors = colors ?? new UICurveLineColors();
             _evaluateCount = 200;
 
             _line.color = _colors.lineColor;
+            _scrubber.color = _colors.scrubberColor;
 
             SetPointsFromCurve();
         }
@@ -118,6 +121,7 @@ namespace CurveEditor.UI
                     curve.MoveKey(i, key);
             }
 
+            SetScrubber(_scrubber.rectTransform.localPosition.x / _line.rectTransform.sizeDelta.x + 0.5f);
             _storable.NotifyUpdated();
         }
 
@@ -173,6 +177,7 @@ namespace CurveEditor.UI
                 SetInHandleMode(point, point.inHandleMode);
             }
 
+            SetScrubber(_scrubber.rectTransform.localPosition.x / _line.rectTransform.sizeDelta.x + 0.5f);
             RedrawLine();
         }
 
@@ -200,6 +205,9 @@ namespace CurveEditor.UI
             points.Remove(point);
             UnityEngine.Object.Destroy(point.gameObject);
         }
+
+        public void SetScrubber(float time)
+            =>  _scrubber.rectTransform.anchoredPosition = new Vector2(time - 0.5f, curve.Evaluate(time) - 0.5f) * _line.rectTransform.sizeDelta;
 
         public void SetSelectedPoint(UICurveEditorPoint point)
         {

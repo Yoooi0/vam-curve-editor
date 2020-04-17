@@ -6,6 +6,7 @@ UI\Control\UILine.cs
 UI\Control\UICurveLine.cs
 UI\Control\UICurveEditor.cs
 UI\Control\UICurveEditorPoint.cs
+UI\Control\UIScrubber.cs
 UI\Utils\UIRaycastEventsBehaviour.cs
 UI\Utils\UIInputBehaviour.cs
 UI\Utils\UIMouseDragBehaviour.cs

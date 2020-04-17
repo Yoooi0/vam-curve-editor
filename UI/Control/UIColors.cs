@@ -18,6 +18,7 @@ namespace CurveEditor.UI
         public Color outHandleColor = new Color(0, 0, 0);
         public Color outHandleColorWeighted = new Color(0.427f, 0.035f, 0.517f);
         public Color lineColor = new Color(0.9f, 0.9f, 0.9f);
+        public Color scrubberColor = new Color(0.382f, 0.111f, 0.488f);
 
         public static UICurveLineColors CreateFrom(Color tint)
         {
@@ -39,7 +40,8 @@ namespace CurveEditor.UI
                 inHandleColorWeighted = darkColor,
                 outHandleColor = veryDarkColor,
                 outHandleColorWeighted = darkColor,
-                lineColor = desaturatedColor
+                lineColor = desaturatedColor,
+                scrubberColor = Color.HSVToRGB(h, s * 1.2f, v * 0.9f)
             };
         }
     }
