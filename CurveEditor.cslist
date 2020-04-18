@@ -6,6 +6,6 @@ UI\Control\UICurveEditor.cs
 UI\Control\UICurveEditorCanvas.cs
 UI\Graphic\CurveLine.cs
 UI\Graphic\CurveEditorPoint.cs
-UI\Graphic\AbstractDrawable.cs
+UI\Graphic\IDrawable.cs
 UI\Graphic\VertexHelperExtensions.cs
 Utils\MathUtils.cs

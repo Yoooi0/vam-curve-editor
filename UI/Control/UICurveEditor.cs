@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -15,7 +15,6 @@ namespace CurveEditor.UI
 
         private readonly Dictionary<IStorableAnimationCurve, CurveLine> _storableToLineMap;
         private bool _readOnly;
-        private bool _showScrubbers;
 
         public bool readOnly
         {
@@ -38,6 +37,17 @@ namespace CurveEditor.UI
             set { _canvas.showScrubbers = value; }
         }
 
+        public bool allowViewDragging
+        {
+            get { return _canvas.allowViewDragging; }
+            set { _canvas.allowViewDragging = value; }
+        }
+
+        public bool allowViewZooming
+        {
+            get { return _canvas.allowViewZooming; }
+            set { _canvas.allowViewZooming = value; }
+        }
 
         public UICurveEditor(UIDynamic container, float width, float height, List<UIDynamicButton> buttons = null, UICurveEditorColors colors = null, bool readOnly = false)
         {
@@ -127,6 +137,7 @@ namespace CurveEditor.UI
             foreach(var kv in _storableToLineMap)
                 _canvas.SetScrubberPosition(kv.Value, time);
         }
+
         public void SetScrubber(IStorableAnimationCurve storable, float time)
         {
             if (!_storableToLineMap.ContainsKey(storable))
@@ -135,16 +146,15 @@ namespace CurveEditor.UI
             _canvas.SetScrubberPosition(_storableToLineMap[storable], time);
         }
 
-        private void SetHandleMode(CurveEditorPoint point, int mode) => point?.owner?.SetHandleMode(point, mode);
-        private void SetOutHandleMode(CurveEditorPoint point, int mode) => point?.owner?.SetOutHandleMode(point, mode);
-        private void SetInHandleMode(CurveEditorPoint point, int mode) => point?.owner?.SetInHandleMode(point, mode);
+        public void SetViewToFit() => _canvas.SetViewToFit();
 
         public void ToggleHandleMode()
         {
             if (_canvas.selectedPoint != null)
             {
-                SetHandleMode(_canvas.selectedPoint, 1 - _canvas.selectedPoint.handleMode);
-                _canvas.selectedPoint.owner.SetCurveFromPoints();
+                var line = _canvas.selectedPoint.parent;
+                line.SetHandleMode(_canvas.selectedPoint, 1 - _canvas.selectedPoint.handleMode);
+                line.SetCurveFromPoints();
                 _canvas.SetVerticesDirty();
             }
         }
@@ -153,8 +163,9 @@ namespace CurveEditor.UI
         {
             if (_canvas.selectedPoint != null)
             {
-                SetOutHandleMode(_canvas.selectedPoint, 1 - _canvas.selectedPoint.outHandleMode);
-                _canvas.selectedPoint.owner.SetCurveFromPoints();
+                var line = _canvas.selectedPoint.parent;
+                line.SetOutHandleMode(_canvas.selectedPoint, 1 - _canvas.selectedPoint.outHandleMode);
+                line.SetCurveFromPoints();
                 _canvas.SetVerticesDirty();
             }
         }
@@ -163,8 +174,9 @@ namespace CurveEditor.UI
         {
             if (_canvas.selectedPoint != null)
             {
-                SetInHandleMode(_canvas.selectedPoint, 1 - _canvas.selectedPoint.inHandleMode);
-                _canvas.selectedPoint.owner.SetCurveFromPoints();
+                var line = _canvas.selectedPoint.parent;
+                line.SetInHandleMode(_canvas.selectedPoint, 1 - _canvas.selectedPoint.inHandleMode);
+                line.SetCurveFromPoints();
                 _canvas.SetVerticesDirty();
             }
         }
@@ -174,7 +186,7 @@ namespace CurveEditor.UI
             if (_canvas.selectedPoint == null)
                 return;
 
-            var line = _canvas.selectedPoint.owner;
+            var line = _canvas.selectedPoint.parent;
             var idx = line.points.IndexOf(_canvas.selectedPoint);
             var curve = line.curve;
             var key = curve[idx];

@@ -25,6 +25,7 @@ namespace CurveEditor.UI
         public static void DrawCircle(this VertexHelper vh, Vector2 position, float radius, Color color, Matrix4x4 viewMatrix)
         {
             const int segments = 10;
+
             var prev = position;
             for (var i = 0; i < segments + 1; i++)
             {

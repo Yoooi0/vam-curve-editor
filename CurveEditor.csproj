@@ -92,11 +92,12 @@
     <Compile Include="IStorableAnimationCurve.cs" />
     <Compile Include="JSONStorableAnimationCurve.cs" />
     <Compile Include="UI\Control\UICurveEditorCanvas.cs" />
-    <Compile Include="UI\Graphic\AbstractDrawable.cs" />
+    <Compile Include="UI\Graphic\IDrawable.cs" />
     <Compile Include="UI\Control\UICurveEditor.cs" />
     <Compile Include="UI\Graphic\CurveEditorPoint.cs" />
     <Compile Include="UI\Control\UIColors.cs" />
     <Compile Include="UI\Graphic\CurveLine.cs" />
+    <Compile Include="UI\Graphic\VertexHelperExtensions.cs" />
     <Compile Include="Utils\MathUtils.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

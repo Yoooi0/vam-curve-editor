@@ -8,18 +8,17 @@ using UnityEngine.UI;
 
 namespace CurveEditor.UI
 {
-    public class CurveLine : AbstractDrawable
+    public class CurveLine : IDrawable
     {
         private readonly IStorableAnimationCurve _storable;
         private readonly UICurveLineColors _colors;
-        private int _evaluateCount;
         private CurveEditorPoint _selectedPoint;
 
         public readonly List<CurveEditorPoint> points;
-        public int evaluateCount;
 
+        public float thickness { get; set; } = 0.04f;
+        public int evaluateCount { get; set; } = 200;
         public AnimationCurve curve => _storable.val;
-
 
         public CurveLine(IStorableAnimationCurve storable, UICurveLineColors colors = null)
         {
@@ -27,23 +26,22 @@ namespace CurveEditor.UI
 
             _storable = storable;
             _colors = colors ?? new UICurveLineColors();
-            _evaluateCount = 200;
 
             SetPointsFromCurve();
         }
 
-        public override void PopulateMesh(VertexHelper vh, Matrix4x4 viewMatrix, Bounds viewBounds)
+        public void PopulateMesh(VertexHelper vh, Matrix4x4 viewMatrix, Bounds viewBounds)
         {
             var curvePoints = new List<Vector2>();
             var from = Mathf.Min(viewBounds.min.x, curve.keys.First().time);
             var to = Mathf.Max(viewBounds.max.x, curve.keys.Last().time);
-            for (var i = 0; i < _evaluateCount; i++)
+            for (var i = 0; i < evaluateCount; i++)
             {
-                var t = Mathf.Lerp(from, to, (float)i / (_evaluateCount - 1));
+                var t = Mathf.Lerp(from, to, (float)i / (evaluateCount - 1));
                 curvePoints.Add(new Vector2(t, curve.Evaluate(t)));
             }
 
-            vh.DrawLine(curvePoints, 0.04f, _colors.lineColor, viewMatrix);
+            vh.DrawLine(curvePoints, thickness, _colors.lineColor, viewMatrix);
             foreach(var point in this.points)
                 point.PopulateMesh(vh, viewMatrix, viewBounds);
         }
@@ -164,13 +162,14 @@ namespace CurveEditor.UI
 
         public CurveEditorPoint CreatePoint(Vector2 position)
         {
-            var point = new CurveEditorPoint();
-            point.owner = this;
-            point.pointColor = _colors.pointColor;
-            point.inHandleColor = _colors.inHandleColor;
-            point.outHandleColor = _colors.outHandleColor;
-            point.lineColor = _colors.handleLineColor;
-            point.position = position;
+            var point = new CurveEditorPoint(this)
+            {
+                pointColor = _colors.pointColor,
+                inHandleColor = _colors.inHandleColor,
+                outHandleColor = _colors.outHandleColor,
+                lineColor = _colors.handleLineColor,
+                position = position
+            };
 
             points.Add(point);
             return point;

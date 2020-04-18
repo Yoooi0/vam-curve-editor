@@ -14,28 +14,29 @@ namespace CurveEditor.UI
         private readonly List<CurveLine> _lines = new List<CurveLine>();
         private readonly Dictionary<CurveLine, float> _scrubberPositions = new Dictionary<CurveLine, float>();
 
-        private CurveEditorPoint _selectedPoint;
-
-        private Vector2 _cameraPosition;
-        private Vector2 _dragStartPosition;
-        private Vector2 _dragTranslation;
-
-        private bool _showScrubbers;
-
+        private Vector2 _cameraPosition = Vector2.zero;
+        private Vector2 _dragStartPosition = Vector2.zero;
+        private Vector2 _dragTranslation = Vector2.zero;
         private float zoomValue = 100;
-        private Matrix4x4 _viewMatrix => Matrix4x4.TRS(_cameraPosition + _dragTranslation, Quaternion.identity, new Vector3(zoomValue, zoomValue, 1));
+        private bool _showScrubbers = true;
+        private Matrix4x4 _viewMatrix = Matrix4x4.identity;
+
         private Matrix4x4 _viewMatrixInv => _viewMatrix.inverse;
 
-        public CurveEditorPoint selectedPoint
-        {
-            get { return _selectedPoint; }
-            set { SetSelectedPoint(value); }
-        }
+        public CurveEditorPoint selectedPoint { get; private set; } = null;
+        public bool allowViewDragging { get; set; } = true;
+        public bool allowViewZooming { get; set; } = true;
 
         public bool showScrubbers
         {
             get { return _showScrubbers; }
             set { _showScrubbers = value; SetVerticesDirty(); }
+        }
+
+        protected override void Awake()
+        {
+            base.Awake();
+            UpdateViewMatrix();
         }
 
         protected override void OnPopulateMesh(VertexHelper vh)
@@ -56,17 +57,57 @@ namespace CurveEditor.UI
                     vh.DrawLine(new Vector2(kv.Value, min.y), new Vector2(kv.Value, max.y), 0.02f, Color.black, _viewMatrix);
 
                 foreach (var kv in _scrubberPositions)
-                {
-                    var line = kv.Key;
-                    var time = kv.Value;
+                    vh.DrawCircle(new Vector2(kv.Value, kv.Key.curve.Evaluate(kv.Value)), 0.05f, Color.white, _viewMatrix);
+            }
+        }
 
-                    var position = new Vector2(time, line.curve.Evaluate(time));
-                    vh.DrawCircle(position, 0.05f, Color.white, _viewMatrix);
+        protected void Update()
+        {
+            if (selectedPoint != null)
+            {
+                if (Input.GetKeyDown(KeyCode.Delete))
+                {
+                    selectedPoint.parent.DestroyPoint(selectedPoint);
+                    selectedPoint.parent.SetCurveFromPoints();
+                    SetSelectedPoint(null);
+                    SetVerticesDirty();
+                }
+            }
+
+            if (allowViewZooming)
+            {
+                if (Input.GetKeyDown(KeyCode.W))
+                {
+                    zoomValue *= 1.1f;
+                    UpdateViewMatrix();
+                    SetVerticesDirty();
+                }
+                if (Input.GetKeyDown(KeyCode.S))
+                {
+                    zoomValue /= 1.1f;
+                    UpdateViewMatrix();
+                    SetVerticesDirty();
                 }
             }
         }
 
-        internal CurveLine CreateCurve(IStorableAnimationCurve storable, UICurveLineColors colors, float thickness)
+        private void UpdateViewMatrix()
+            => _viewMatrix = Matrix4x4.TRS(_cameraPosition + _dragTranslation, Quaternion.identity, new Vector3(zoomValue, zoomValue, 1));
+
+        public void SetViewToFit()
+        {
+            var min = Vector2.positiveInfinity;
+            var max = Vector2.negativeInfinity;
+            foreach (var point in _lines.SelectMany(l => l.points))
+            {
+                max = Vector2.Max(max, point.position);
+                min = Vector2.Min(min, point.position);
+            }
+
+            //TODO:
+        }
+
+        public CurveLine CreateCurve(IStorableAnimationCurve storable, UICurveLineColors colors, float thickness)
         {
             var line = new CurveLine(storable, colors);
             _lines.Add(line);
@@ -75,7 +116,7 @@ namespace CurveEditor.UI
             return line;
         }
 
-        internal void RemoveCurve(CurveLine line)
+        public void RemoveCurve(CurveLine line)
         {
             _lines.Remove(line);
             _scrubberPositions.Remove(line);
@@ -89,13 +130,13 @@ namespace CurveEditor.UI
             
             if (point != null)
             {
-                _lines.Remove(point.owner);
-                _lines.Add(point.owner);
+                _lines.Remove(point.parent);
+                _lines.Add(point.parent);
 
-                point.owner.SetSelectedPoint(point);
+                point.parent.SetSelectedPoint(point);
             }
 
-            _selectedPoint = point;
+            selectedPoint = point;
             SetVerticesDirty();
         }
 
@@ -108,40 +149,15 @@ namespace CurveEditor.UI
             SetVerticesDirty();
         }
 
-        protected void Update()
-        {
-            if (_selectedPoint != null)
-            {
-                if (Input.GetKeyDown(KeyCode.Delete))
-                {
-                    _selectedPoint.owner.DestroyPoint(_selectedPoint);
-                    _selectedPoint.owner.SetCurveFromPoints();
-                    SetSelectedPoint(null);
-                    SetVerticesDirty();
-                }
-            }
-
-            if (Input.GetKeyDown(KeyCode.W))
-            {
-                zoomValue *= 1.1f;
-                SetVerticesDirty();
-            }
-            if (Input.GetKeyDown(KeyCode.S))
-            {
-                zoomValue /= 1.1f;
-                SetVerticesDirty();
-            }
-        }
-
         public void OnBeginDrag(PointerEventData eventData)
         {
             Vector2 position;
-            if (!ScreenToCanvasPosition(eventData, out position))
+            if (!PointerEventToCanvasPosition(eventData, out position))
                 return;
 
-            if (_selectedPoint?.OnBeginDrag(position) == true)
+            if (selectedPoint?.OnBeginDrag(position) == true)
             {
-                _selectedPoint.owner.SetCurveFromPoints();
+                selectedPoint.parent.SetCurveFromPoints();
                 SetVerticesDirty();
                 return;
             }
@@ -150,45 +166,55 @@ namespace CurveEditor.UI
             if (closest?.OnBeginDrag(position) == true)
             {
                 SetSelectedPoint(closest);
-                _selectedPoint.owner.SetCurveFromPoints();
+                selectedPoint.parent.SetCurveFromPoints();
                 return;
             }
 
-            _dragStartPosition = eventData.position;
+            if (allowViewDragging)
+            {
+                _dragStartPosition = eventData.position;
+            }
         }
 
         public void OnDrag(PointerEventData eventData)
         {
             Vector2 position;
-            if (!ScreenToCanvasPosition(eventData, out position))
+            if (!PointerEventToCanvasPosition(eventData, out position))
                 return;
 
-            if (_selectedPoint?.OnDrag(position) == true)
+            if (selectedPoint?.OnDrag(position) == true)
             {
-                _selectedPoint.owner.SetCurveFromPoints();
+                selectedPoint.parent.SetCurveFromPoints();
                 SetVerticesDirty();
                 return;
             }
 
-            _dragTranslation = eventData.position - _dragStartPosition;
-            SetVerticesDirty();
+            if (allowViewDragging)
+            {
+                _dragTranslation = eventData.position - _dragStartPosition;
+                UpdateViewMatrix();
+                SetVerticesDirty();
+            }
         }
 
         public void OnEndDrag(PointerEventData eventData)
         {
             Vector2 position;
-            if (!ScreenToCanvasPosition(eventData, out position))
+            if (!PointerEventToCanvasPosition(eventData, out position))
                 return;
 
-            if (_selectedPoint?.OnEndDrag(position) == true)
+            if (selectedPoint?.OnEndDrag(position) == true)
             {
-                _selectedPoint.owner.SetCurveFromPoints();
+                selectedPoint.parent.SetCurveFromPoints();
                 SetVerticesDirty();
                 return;
             }
 
-            _cameraPosition += _dragTranslation;
-            _dragTranslation = Vector2.zero;
+            if (allowViewDragging)
+            {
+                _cameraPosition += _dragTranslation;
+                _dragTranslation = Vector2.zero;
+            }
         }
 
         public void OnPointerClick(PointerEventData eventData)
@@ -197,10 +223,10 @@ namespace CurveEditor.UI
                 return;
 
             Vector2 position;
-            if (!ScreenToCanvasPosition(eventData, out position))
+            if (!PointerEventToCanvasPosition(eventData, out position))
                 return;
 
-            if (_selectedPoint?.OnPointerClick(position) == true)
+            if (selectedPoint?.OnPointerClick(position) == true)
             {
                 SetVerticesDirty();
                 return;
@@ -227,7 +253,7 @@ namespace CurveEditor.UI
             SetSelectedPoint(null);
         }
 
-        private bool ScreenToCanvasPosition(PointerEventData eventData, out Vector2 position)
+        private bool PointerEventToCanvasPosition(PointerEventData eventData, out Vector2 position)
         {
             position = Vector2.zero;
 
