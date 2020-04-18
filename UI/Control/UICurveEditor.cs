@@ -1,8 +1,6 @@
-﻿using CurveEditor.Utils;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace CurveEditor.UI
@@ -13,12 +11,15 @@ namespace CurveEditor.UI
         public readonly GameObject gameObject;
 
         private readonly GameObject _linesContainer;
+        private readonly GameObject _scrubbersContainer;
         private readonly UICurveEditorColors _colors;
         private readonly List<UICurveLine> _lines;
+
         private readonly Dictionary<IStorableAnimationCurve, UICurveLine> _storableToLineMap;
         private readonly Dictionary<UICurveLine, GameObject> _lineToContainerMap;
         private UICurveEditorPoint _selectedPoint;
         private bool _readOnly;
+        private bool _showScrubbers;
 
         public bool readOnly
         {
@@ -31,6 +32,17 @@ namespace CurveEditor.UI
                 var canvasGroup = _linesContainer.GetComponent<CanvasGroup>();
                 canvasGroup.interactable = !value;
                 canvasGroup.blocksRaycasts = !value;
+            }
+        }
+
+        public bool showScrubbers
+        {
+            get { return _showScrubbers; }
+            set
+            {
+                _showScrubbers = value;
+                var canvasGroup = _scrubbersContainer.GetComponent<CanvasGroup>();
+                canvasGroup.alpha = value ? 1 : 0;
             }
         }
 
@@ -99,6 +111,10 @@ namespace CurveEditor.UI
                 foreach(var button in buttons)
                     button.gameObject.transform.SetParent(gridLayout.transform, false);
             }
+
+            _scrubbersContainer = new GameObject();
+            _scrubbersContainer.transform.SetParent(gameObject.transform, false);
+            _scrubbersContainer.AddComponent<CanvasGroup>().alpha = 0;
         }
 
         public UICurveLine AddCurve(IStorableAnimationCurve storable, UICurveLineColors colors = null, float thickness = 4)
@@ -112,7 +128,13 @@ namespace CurveEditor.UI
             line.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, rectTransform.sizeDelta.y);
             line.lineThickness = thickness;
 
-            var curveLine = new UICurveLine(storable, line, colors);
+            var scrubberContainer = new GameObject();
+            scrubberContainer.transform.SetParent(_scrubbersContainer.transform, false);
+            var scrubber = scrubberContainer.AddComponent<UIScrubber>();
+            scrubber.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, 1);
+            scrubber.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, rectTransform.sizeDelta.y * 2);
+
+            var curveLine = new UICurveLine(storable, line, scrubber, colors);
             _lines.Add(curveLine);
             _storableToLineMap.Add(storable, curveLine);
             _lineToContainerMap.Add(curveLine, lineContainer);
@@ -143,6 +165,21 @@ namespace CurveEditor.UI
 
             line.SetPointsFromCurve();
             BindPoints(line);
+        }
+
+        public void SetScrubber(float time)
+        {
+            foreach (var line in _lines)
+                line.SetScrubber(time);
+        }
+
+        public void SetScrubber(IStorableAnimationCurve storable, float time)
+        {
+            UICurveLine line;
+            if (!_storableToLineMap.TryGetValue(storable, out line))
+                return;
+
+            line.SetScrubber(time);
         }
 
         private UICurveEditorPoint CreatePoint(UICurveLine line, Vector2 position)

@@ -65,7 +65,7 @@ namespace CurveEditor
 
             _curveEditor = new UICurveEditor(container, 520, container.height, buttons: curveEditorButtons);
             _curveEditor.AddCurve(_curveJSON, UICurveLineColors.CreateFrom(new Color(0.388f, 0.698f, 0.890f)));
-            _curveEditor.AddCurve(_curve2JSON, UICurveLineColors.CreateFrom(new Color(0.890f, 0.698f, 0.388f)));
+            _curveEditor.AddCurve(_curve2JSON, UICurveLineColors.CreateFrom(new Color(0.890f, 0.388f, 0.398f)));
 
             var resetButton = CreateButton("Reset");
             var playButton = CreateButton("Play");
@@ -88,6 +88,19 @@ namespace CurveEditor
             var readOnlyStorable = new JSONStorableBool("ReadOnly", false);
             var readOnlyToggle = CreateToggle(readOnlyStorable);
             readOnlyStorable.setCallbackFunction = v => _curveEditor.readOnly = v;
+
+            var showScrubberStorable = new JSONStorableBool("Show Scrubbers", true);
+            var showScrubberToggle = CreateToggle(showScrubberStorable);
+            showScrubberStorable.setCallbackFunction = v => _curveEditor.showScrubbers = v;
+
+            var sliderStorable = new JSONStorableFloat("Scrubber time", 0, 0, 1);
+            var slider = CreateSlider(sliderStorable);
+
+            sliderStorable.setCallbackFunction = v =>
+            {
+                _curveEditor.SetScrubber(_curveJSON, v);
+                _curveEditor.SetScrubber(_curve2JSON, 1 - v);
+            };
         }
 
         protected void Update() { }

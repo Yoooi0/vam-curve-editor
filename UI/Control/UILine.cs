@@ -8,29 +8,18 @@ namespace CurveEditor.UI
     public class UILine : MaskableGraphic
     {
         private List<Vector2> _points;
-        private Vector2 _margin;
+        private float _lineThickness = 2;
 
-        public float lineThickness = 2;
-        public bool relativeSize = false;
+        public float lineThickness
+        {
+            get { return _lineThickness; }
+            set { _lineThickness = value; SetVerticesDirty(); }
+        }
 
         public List<Vector2> points
         {
             get { return _points; }
-            set
-            {
-                _points = value;
-                SetVerticesDirty();
-            }
-        }
-
-        public Vector2 margin
-        {
-            get { return _margin; }
-            set
-            {
-                _margin = value;
-                SetVerticesDirty();
-            }
+            set { _points = value; SetVerticesDirty(); }
         }
 
         protected override void OnPopulateMesh(VertexHelper vh)
@@ -39,21 +28,10 @@ namespace CurveEditor.UI
                 return;
 
             vh.Clear();
-            var sizeX = rectTransform.rect.width;
-            var sizeY = rectTransform.rect.height;
+            var sizeX = 1;// rectTransform.rect.width;
+            var sizeY = 1;// rectTransform.rect.height;
             var offsetX = -rectTransform.pivot.x * rectTransform.rect.width;
             var offsetY = -rectTransform.pivot.y * rectTransform.rect.height;
-
-            if (!relativeSize)
-            {
-                sizeX = 1;
-                sizeY = 1;
-            }
-
-            sizeX -= _margin.x;
-            sizeY -= _margin.y;
-            offsetX += _margin.x / 2f;
-            offsetY += _margin.y / 2f;
 
             var prevV1 = Vector2.zero;
             var prevV2 = Vector2.zero;
