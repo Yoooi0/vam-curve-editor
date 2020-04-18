@@ -116,7 +116,7 @@ namespace CurveEditor.UI
 
             _scrubbersContainer = new GameObject();
             _scrubbersContainer.transform.SetParent(gameObject.transform, false);
-            _scrubbersContainer.AddComponent<CanvasGroup>();
+            _scrubbersContainer.AddComponent<CanvasGroup>().alpha = 0;
         }
 
         public UICurveLine AddCurve(IStorableAnimationCurve storable, UICurveLineColors colors = null, float thickness = 4)

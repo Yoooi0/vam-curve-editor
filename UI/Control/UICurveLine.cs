@@ -37,12 +37,14 @@ namespace CurveEditor.UI
             _scrubber.color = _colors.scrubberColor;
 
             SetPointsFromCurve();
+            SetScrubber(0);
         }
 
         public void Update()
         {
             SetCurveFromPoints();
             RedrawLine();
+            SetScrubber(_scrubber.rectTransform.localPosition.x / _line.rectTransform.sizeDelta.x + 0.5f);
         }
 
         public void RedrawLine()
@@ -121,7 +123,6 @@ namespace CurveEditor.UI
                     curve.MoveKey(i, key);
             }
 
-            SetScrubber(_scrubber.rectTransform.localPosition.x / _line.rectTransform.sizeDelta.x + 0.5f);
             _storable.NotifyUpdated();
         }
 
@@ -177,7 +178,6 @@ namespace CurveEditor.UI
                 SetInHandleMode(point, point.inHandleMode);
             }
 
-            SetScrubber(_scrubber.rectTransform.localPosition.x / _line.rectTransform.sizeDelta.x + 0.5f);
             RedrawLine();
         }
 
