@@ -91,18 +91,12 @@
     <Compile Include="Plugin.cs" />
     <Compile Include="IStorableAnimationCurve.cs" />
     <Compile Include="JSONStorableAnimationCurve.cs" />
-    <Compile Include="UI\Control\UIScrubber.cs" />
-    <Compile Include="UI\Utils\InputEventArgs.cs" />
-    <Compile Include="UI\Utils\PointerEventArgs.cs" />
+    <Compile Include="UI\Control\UICurveEditorCanvas.cs" />
+    <Compile Include="UI\Graphic\AbstractDrawable.cs" />
     <Compile Include="UI\Control\UICurveEditor.cs" />
-    <Compile Include="UI\Control\UICurveEditorPoint.cs" />
-    <Compile Include="UI\Utils\UIInputBehaviour.cs" />
-    <Compile Include="UI\Control\UILine.cs" />
-    <Compile Include="UI\Utils\UIMouseClickBehaviour.cs" />
-    <Compile Include="UI\Utils\UIMouseDragBehaviour.cs" />
+    <Compile Include="UI\Graphic\CurveEditorPoint.cs" />
     <Compile Include="UI\Control\UIColors.cs" />
-    <Compile Include="UI\Control\UICurveLine.cs" />
-    <Compile Include="UI\Utils\UIRaycastEventsBehaviour.cs" />
+    <Compile Include="UI\Graphic\CurveLine.cs" />
     <Compile Include="Utils\MathUtils.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

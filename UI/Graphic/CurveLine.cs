@@ -1,70 +1,55 @@
 using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.InteropServices;
 using CurveEditor.Utils;
+using Leap;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace CurveEditor.UI
 {
-    public class UICurveLine
+    public class CurveLine : AbstractDrawable
     {
-        private readonly UILine _line;
-        private readonly UIScrubber _scrubber;
         private readonly IStorableAnimationCurve _storable;
         private readonly UICurveLineColors _colors;
         private int _evaluateCount;
-        private UICurveEditorPoint _selectedPoint;
+        private CurveEditorPoint _selectedPoint;
 
-        public readonly List<UICurveEditorPoint> points;
+        public readonly List<CurveEditorPoint> points;
+        public int evaluateCount;
 
         public AnimationCurve curve => _storable.val;
 
-        public int evaluateCount
-        {
-            get { return _evaluateCount; }
-            set { _evaluateCount = value; RedrawLine(); }
-        }
 
-        public UICurveLine(IStorableAnimationCurve storable, UILine line, UIScrubber scrubber, UICurveLineColors colors = null)
+        public CurveLine(IStorableAnimationCurve storable, UICurveLineColors colors = null)
         {
-            points = new List<UICurveEditorPoint>();
+            points = new List<CurveEditorPoint>();
 
             _storable = storable;
-            _line = line;
-            _scrubber = scrubber;
             _colors = colors ?? new UICurveLineColors();
             _evaluateCount = 200;
 
-            _line.color = _colors.lineColor;
-            _scrubber.color = _colors.scrubberColor;
-
             SetPointsFromCurve();
-            SetScrubber(0);
         }
 
-        public void Update()
+        public override void PopulateMesh(VertexHelper vh, Matrix4x4 viewMatrix, Bounds viewBounds)
         {
-            SetCurveFromPoints();
-            RedrawLine();
-            SetScrubber(_scrubber.rectTransform.localPosition.x / _line.rectTransform.sizeDelta.x + 0.5f);
-        }
-
-        public void RedrawLine()
-        {
-            var sizeDelta = _line.rectTransform.sizeDelta;
-            var result = new List<Vector2>();
+            var curvePoints = new List<Vector2>();
+            var from = Mathf.Min(viewBounds.min.x, curve.keys.First().time);
+            var to = Mathf.Max(viewBounds.max.x, curve.keys.Last().time);
             for (var i = 0; i < _evaluateCount; i++)
             {
-                var t = (float)i / (_evaluateCount - 1);
-                var value = curve.Evaluate(t);
-                result.Add(new Vector2(t * sizeDelta.x, value * sizeDelta.y));
+                var t = Mathf.Lerp(from, to, (float)i / (_evaluateCount - 1));
+                curvePoints.Add(new Vector2(t, curve.Evaluate(t)));
             }
 
-            _line.points = result;
+            vh.DrawLine(curvePoints, 0.04f, _colors.lineColor, viewMatrix);
+            foreach(var point in this.points)
+                point.PopulateMesh(vh, viewMatrix, viewBounds);
         }
 
         public void SetCurveFromPoints()
         {
-            var sizeDelta = _line.rectTransform.sizeDelta;
-
             points.Sort(new UICurveEditorPointComparer());
             while (curve.length > points.Count)
                 curve.RemoveKey(0);
@@ -73,13 +58,13 @@ namespace CurveEditor.UI
             {
                 var point = points[i];
 
-                var position = point.rectTransform.anchoredPosition / sizeDelta;
+                var position = point.position;
 
                 var key = new Keyframe(position.x, position.y);
                 key.weightedMode = (WeightedMode)(point.inHandleMode | point.outHandleMode << 1);
 
-                var outPosition = point.outHandlePosition / sizeDelta;
-                var inPosition = point.inHandlePosition / sizeDelta;
+                var outPosition = point.outHandlePosition;
+                var inPosition = point.inHandlePosition;
 
                 if (Mathf.Abs(inPosition.x) < 0.0001f)
                 {
@@ -93,7 +78,7 @@ namespace CurveEditor.UI
                     var prev = i > 0 ? points[i - 1] : null;
                     if (prev != null)
                     {
-                        var prevPosition = prev.rectTransform.anchoredPosition / sizeDelta;
+                        var prevPosition = prev.position;
                         var dx = position.x - prevPosition.x;
                         key.inWeight = Mathf.Clamp(Mathf.Abs(inPosition.x / dx), 0f, 1f);
                     }
@@ -111,7 +96,7 @@ namespace CurveEditor.UI
                     var next = i < points.Count - 1 ? points[i + 1] : null;
                     if (next != null)
                     {
-                        var nextPosition = next.rectTransform.anchoredPosition / sizeDelta;
+                        var nextPosition = next.position;
                         var dx = nextPosition.x - position.x;
                         key.outWeight = Mathf.Clamp(Mathf.Abs(outPosition.x / dx), 0f, 1f);
                     }
@@ -128,8 +113,6 @@ namespace CurveEditor.UI
 
         public void SetPointsFromCurve()
         {
-            var sizeDelta = _line.rectTransform.sizeDelta;
-
             while (points.Count > curve.length)
                 DestroyPoint(points[0]);
             while (points.Count < curve.length)
@@ -139,7 +122,7 @@ namespace CurveEditor.UI
             {
                 var point = points[i];
                 var key = curve[i];
-                point.rectTransform.anchoredPosition = new Vector2(key.time, key.value) * sizeDelta;
+                point.position = new Vector2(key.time, key.value);
 
                 if (key.inTangent != key.outTangent)
                     point.handleMode = 1;
@@ -147,10 +130,10 @@ namespace CurveEditor.UI
                 if (((int)key.weightedMode & 1) > 0) point.inHandleMode = 1;
                 if (((int)key.weightedMode & 2) > 0) point.outHandleMode = 1;
 
-                var outHandleNormal = (MathUtils.VectorFromAngle(Mathf.Atan(key.outTangent)) * sizeDelta).normalized;
+                var outHandleNormal = (MathUtils.VectorFromAngle(Mathf.Atan(key.outTangent))).normalized;
                 if (point.outHandleMode == 1 && i < curve.length - 1)
                 {
-                    var x = key.outWeight * (curve[i + 1].time - key.time) * sizeDelta.x;
+                    var x = key.outWeight * (curve[i + 1].time - key.time);
                     var y = x * (outHandleNormal.y / outHandleNormal.x);
                     var length = Mathf.Sqrt(x * x + y * y);
                     point.outHandlePosition = outHandleNormal * length;
@@ -160,10 +143,10 @@ namespace CurveEditor.UI
                     point.outHandlePosition = outHandleNormal * point.outHandleLength;
                 }
 
-                var inHandleNormal = -(MathUtils.VectorFromAngle(Mathf.Atan(key.inTangent)) * sizeDelta).normalized;
+                var inHandleNormal = -(MathUtils.VectorFromAngle(Mathf.Atan(key.inTangent))).normalized;
                 if (point.inHandleMode == 1 && i > 0)
                 {
-                    var x = key.inWeight * (key.time - curve[i - 1].time) * sizeDelta.x;
+                    var x = key.inWeight * (key.time - curve[i - 1].time);
                     var y = x * (inHandleNormal.y / inHandleNormal.x);
                     var length = Mathf.Sqrt(x * x + y * y);
                     point.inHandlePosition = inHandleNormal * length;
@@ -177,79 +160,67 @@ namespace CurveEditor.UI
                 SetOutHandleMode(point, point.outHandleMode);
                 SetInHandleMode(point, point.inHandleMode);
             }
-
-            RedrawLine();
         }
 
-        public UICurveEditorPoint CreatePoint(Vector2 position)
+        public CurveEditorPoint CreatePoint(Vector2 position)
         {
-            var pointObject = new GameObject();
-            pointObject.transform.SetParent(_line.transform, false);
-
-            var point = pointObject.AddComponent<UICurveEditorPoint>();
+            var point = new CurveEditorPoint();
             point.owner = this;
-            point.draggingRect = _line.rectTransform;
-            point.color = _colors.pointColor;
+            point.pointColor = _colors.pointColor;
             point.inHandleColor = _colors.inHandleColor;
             point.outHandleColor = _colors.outHandleColor;
             point.lineColor = _colors.handleLineColor;
-
-            point.rectTransform.anchoredPosition = position;
+            point.position = position;
 
             points.Add(point);
             return point;
         }
 
-        public void DestroyPoint(UICurveEditorPoint point)
+        public void DestroyPoint(CurveEditorPoint point)
         {
-            points.Remove(point);
-            UnityEngine.Object.Destroy(point.gameObject);
+            if (points.Count > 1)
+                points.Remove(point);
         }
 
-        public void SetScrubber(float time)
-            =>  _scrubber.rectTransform.anchoredPosition = new Vector2(time - 0.5f, curve.Evaluate(time) - 0.5f) * _line.rectTransform.sizeDelta;
-
-        public void SetSelectedPoint(UICurveEditorPoint point)
+        public void SetSelectedPoint(CurveEditorPoint point)
         {
             if (_selectedPoint != null)
             {
-                _selectedPoint.color = _colors.pointColor;
+                _selectedPoint.pointColor = _colors.pointColor;
                 _selectedPoint.showHandles = false;
                 _selectedPoint = null;
             }
 
             if (point != null)
             {
-                point.color = _colors.selectedPointColor;
+                point.pointColor = _colors.selectedPointColor;
                 point.showHandles = true;
-                point.SetVerticesDirty();
-
                 _selectedPoint = point;
             }
         }
 
-        public void SetHandleMode(UICurveEditorPoint point, int mode)
+        public void SetHandleMode(CurveEditorPoint point, int mode)
         {
             point.handleMode = mode;
             point.lineColor = mode == 0 ? _colors.handleLineColor : _colors.handleLineColorFree;
         }
 
-        public void SetOutHandleMode(UICurveEditorPoint point, int mode)
+        public void SetOutHandleMode(CurveEditorPoint point, int mode)
         {
             point.outHandleMode = mode;
             point.outHandleColor = mode == 0 ? _colors.outHandleColor : _colors.outHandleColorWeighted;
         }
 
-        public void SetInHandleMode(UICurveEditorPoint point, int mode)
+        public void SetInHandleMode(CurveEditorPoint point, int mode)
         {
             point.inHandleMode = mode;
             point.inHandleColor = mode == 0 ? _colors.inHandleColor : _colors.inHandleColorWeighted;
         }
 
-        private class UICurveEditorPointComparer : IComparer<UICurveEditorPoint>
+        private class UICurveEditorPointComparer : IComparer<CurveEditorPoint>
         {
-            public int Compare(UICurveEditorPoint x, UICurveEditorPoint y)
-                => Comparer<float>.Default.Compare(x.rectTransform.anchoredPosition.x, y.rectTransform.anchoredPosition.x);
+            public int Compare(CurveEditorPoint x, CurveEditorPoint y)
+                => Comparer<float>.Default.Compare(x.position.x, y.position.x);
         }
     }
 }

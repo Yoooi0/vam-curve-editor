@@ -23,7 +23,7 @@ namespace CurveEditor
                     _animation = containingAtom.GetComponent<Animation>() ?? containingAtom.gameObject.AddComponent<Animation>();
 
                 _curveJSON = new JSONStorableAnimationCurve("Curve", CurveUpdated);
-                _curveJSON.SetValToDefault();
+                _curveJSON.val = AnimationCurve.EaseInOut(0, 0, 2, 1);
                 _curve2JSON = new JSONStorableAnimationCurve("Curve", CurveUpdated);
                 _curve2JSON.val = AnimationCurve.Linear(0f, 0.5f, 1f, 0.5f);
 

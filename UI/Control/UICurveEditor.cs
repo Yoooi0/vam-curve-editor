@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -10,14 +9,11 @@ namespace CurveEditor.UI
         public readonly UIDynamic container;
         public readonly GameObject gameObject;
 
-        private readonly GameObject _linesContainer;
-        private readonly GameObject _scrubbersContainer;
+        private readonly GameObject _canvasContainer;
+        private readonly UICurveEditorCanvas _canvas;
         private readonly UICurveEditorColors _colors;
-        private readonly List<UICurveLine> _lines;
 
-        private readonly Dictionary<IStorableAnimationCurve, UICurveLine> _storableToLineMap;
-        private readonly Dictionary<UICurveLine, GameObject> _lineToContainerMap;
-        private UICurveEditorPoint _selectedPoint;
+        private readonly Dictionary<IStorableAnimationCurve, CurveLine> _storableToLineMap;
         private bool _readOnly;
         private bool _showScrubbers;
 
@@ -28,23 +24,20 @@ namespace CurveEditor.UI
             {
                 _readOnly = value;
 
-                SetSelectedPoint(null);
-                var canvasGroup = _linesContainer.GetComponent<CanvasGroup>();
+                var canvasGroup = _canvasContainer.GetComponent<CanvasGroup>();
                 canvasGroup.interactable = !value;
                 canvasGroup.blocksRaycasts = !value;
+
+                _canvas.SetSelectedPoint(null);
             }
         }
 
         public bool showScrubbers
         {
-            get { return _showScrubbers; }
-            set
-            {
-                _showScrubbers = value;
-                var canvasGroup = _scrubbersContainer.GetComponent<CanvasGroup>();
-                canvasGroup.alpha = value ? 1 : 0;
-            }
+            get { return _canvas.showScrubbers; }
+            set { _canvas.showScrubbers = value; }
         }
+
 
         public UICurveEditor(UIDynamic container, float width, float height, List<UIDynamicButton> buttons = null, UICurveEditorColors colors = null, bool readOnly = false)
         {
@@ -52,9 +45,7 @@ namespace CurveEditor.UI
 
             this.container = container;
 
-            _storableToLineMap = new Dictionary<IStorableAnimationCurve, UICurveLine>();
-            _lineToContainerMap = new Dictionary<UICurveLine, GameObject>();
-            _lines = new List<UICurveLine>();
+            _storableToLineMap = new Dictionary<IStorableAnimationCurve, CurveLine>();
             _colors = colors ?? new UICurveEditorColors();
 
             gameObject = new GameObject();
@@ -65,9 +56,6 @@ namespace CurveEditor.UI
             mask.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
             mask.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height - buttonContainerHeight);
 
-            var input = gameObject.AddComponent<UIInputBehaviour>();
-            input.OnInput += OnInput;
-
             var backgroundContent = new GameObject();
             backgroundContent.transform.SetParent(gameObject.transform, false);
 
@@ -76,20 +64,14 @@ namespace CurveEditor.UI
             backgroundImage.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height - buttonContainerHeight);
             backgroundImage.color = _colors.backgroundColor;
 
-            _linesContainer = new GameObject();
-            _linesContainer.transform.SetParent(gameObject.transform, false);
-            _linesContainer.AddComponent<CanvasGroup>();
-
-            var raycastEvents = _linesContainer.AddComponent<UIRaycastEventsBehaviour>();
-            raycastEvents.DefaultOnPointerClick += OnLinesContainerClick;
-            raycastEvents.DefaultOnDrag += OnLinesContainerDrag;
-            raycastEvents.DefaultOnEndDrag += OnLinesContainerEndDrag;
+            _canvasContainer = new GameObject();
+            _canvasContainer.transform.SetParent(gameObject.transform, false);
+            _canvasContainer.AddComponent<CanvasGroup>();
+            _canvas = _canvasContainer.AddComponent<UICurveEditorCanvas>();
+            _canvas.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
+            _canvas.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height - buttonContainerHeight);
 
             this.readOnly = readOnly;
-
-            var lineContainerRectTranform = _linesContainer.AddComponent<RectTransform>();
-            lineContainerRectTranform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
-            lineContainerRectTranform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height - buttonContainerHeight);
 
             if (buttons != null && buttons.Count != 0)
             {
@@ -111,35 +93,12 @@ namespace CurveEditor.UI
                 foreach(var button in buttons)
                     button.gameObject.transform.SetParent(gridLayout.transform, false);
             }
-
-            _scrubbersContainer = new GameObject();
-            _scrubbersContainer.transform.SetParent(gameObject.transform, false);
-            _scrubbersContainer.AddComponent<CanvasGroup>().alpha = 0;
         }
 
-        public UICurveLine AddCurve(IStorableAnimationCurve storable, UICurveLineColors colors = null, float thickness = 4)
+        public CurveLine AddCurve(IStorableAnimationCurve storable, UICurveLineColors colors = null, float thickness = 4)
         {
-            var lineContainer = new GameObject();
-            lineContainer.transform.SetParent(_linesContainer.transform, false);
-
-            var rectTransform = _linesContainer.GetComponent<RectTransform>();
-            var line = lineContainer.AddComponent<UILine>();
-            line.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, rectTransform.sizeDelta.x);
-            line.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, rectTransform.sizeDelta.y);
-            line.lineThickness = thickness;
-
-            var scrubberContainer = new GameObject();
-            scrubberContainer.transform.SetParent(_scrubbersContainer.transform, false);
-            var scrubber = scrubberContainer.AddComponent<UIScrubber>();
-            scrubber.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, 1);
-            scrubber.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, rectTransform.sizeDelta.y * 2);
-
-            var curveLine = new UICurveLine(storable, line, scrubber, colors);
-            _lines.Add(curveLine);
+            var curveLine = _canvas.CreateCurve(storable, colors, thickness);
             _storableToLineMap.Add(storable, curveLine);
-            _lineToContainerMap.Add(curveLine, lineContainer);
-
-            BindPoints(curveLine);
             return curveLine;
         }
 
@@ -149,190 +108,74 @@ namespace CurveEditor.UI
                 return;
 
             var line = _storableToLineMap[storable];
+            _canvas.RemoveCurve(line);
             _storableToLineMap.Remove(storable);
-            _lines.Remove(line);
-
-            var lineContainer = _lineToContainerMap[line];
-            _lineToContainerMap.Remove(line);
-            GameObject.Destroy(lineContainer);
         }
 
         public void UpdateCurve(IStorableAnimationCurve storable)
         {
-            UICurveLine line;
+            CurveLine line;
             if (!_storableToLineMap.TryGetValue(storable, out line))
                 return;
 
             line.SetPointsFromCurve();
-            BindPoints(line);
+            _canvas.SetVerticesDirty();
         }
 
         public void SetScrubber(float time)
         {
-            foreach (var line in _lines)
-                line.SetScrubber(time);
+            foreach(var kv in _storableToLineMap)
+                _canvas.SetScrubberPosition(kv.Value, time);
         }
-
         public void SetScrubber(IStorableAnimationCurve storable, float time)
         {
-            UICurveLine line;
-            if (!_storableToLineMap.TryGetValue(storable, out line))
+            if (!_storableToLineMap.ContainsKey(storable))
                 return;
 
-            line.SetScrubber(time);
+            _canvas.SetScrubberPosition(_storableToLineMap[storable], time);
         }
 
-        private UICurveEditorPoint CreatePoint(UICurveLine line, Vector2 position)
-        {
-            var point = line.CreatePoint(position);
-            BindPoint(point);
-            return point;
-        }
-
-        private void BindPoint(UICurveEditorPoint point)
-        {
-            if (point == null)
-                return;
-
-            point.OnDragBegin -= OnPointBeginDrag;
-            point.OnDragging -= OnPointDragging;
-            point.OnClick -= OnPointClick;
-
-            point.OnDragBegin += OnPointBeginDrag;
-            point.OnDragging += OnPointDragging;
-            point.OnClick += OnPointClick;
-        }
-
-        private void BindPoints(UICurveLine line)
-        {
-            foreach (var point in line.points)
-                BindPoint(point);
-        }
-
-        private void DestroyPoint(UICurveEditorPoint point)
-        {
-            point?.owner?.DestroyPoint(point);
-            point?.owner?.Update();
-        }
-
-        private void SetSelectedPoint(UICurveEditorPoint point)
-        {
-            foreach (var line in _lines)
-                line.SetSelectedPoint(null);
-
-            if (point != null)
-            {
-                _lineToContainerMap[point.owner].transform.SetAsLastSibling();
-                point.owner.SetSelectedPoint(point);
-            }
-            _selectedPoint = point;
-        }
-
-        private void SetHandleMode(UICurveEditorPoint point, int mode) => point?.owner?.SetHandleMode(point, mode);
-        private void SetOutHandleMode(UICurveEditorPoint point, int mode) => point?.owner?.SetOutHandleMode(point, mode);
-        private void SetInHandleMode(UICurveEditorPoint point, int mode) => point?.owner?.SetInHandleMode(point, mode);
-
-        private void OnInput(object sender, InputEventArgs e)
-        {
-            if (_selectedPoint != null)
-            {
-                if (e.Pressed && e.Key == KeyCode.Delete)
-                {
-                    DestroyPoint(_selectedPoint);
-                    SetSelectedPoint(null);
-                }
-            }
-        }
-
-        private void OnLinesContainerClick(object sender, PointerEventArgs e)
-        {
-            if (e.Data.dragging)
-                return;
-
-            if (e.Data.clickCount > 0 && e.Data.clickCount % 2 == 0)
-            {
-                var rectTransform = _linesContainer.GetComponent<RectTransform>();
-
-                Vector2 localPosition;
-                if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(rectTransform, e.Data.position, e.Data.pressEventCamera, out localPosition))
-                    return;
-
-                var pointPosition = localPosition + rectTransform.sizeDelta / 2;
-                var normalizedPosition = pointPosition / rectTransform.sizeDelta;
-                var closestLine = _lines.OrderBy(l => Mathf.Abs(normalizedPosition.y - l.curve.Evaluate(normalizedPosition.x))).FirstOrDefault();
-
-                SetSelectedPoint(null);
-                CreatePoint(closestLine, pointPosition);
-
-                closestLine.Update();
-            }
-
-            SetSelectedPoint(null);
-        }
-
-        private void OnLinesContainerDrag(object sender, PointerEventArgs e)
-        {
-            if (_selectedPoint?.OnDrag(e.Data) == false)
-                SetSelectedPoint(null);
-        }
-
-        private void OnLinesContainerEndDrag(object sender, PointerEventArgs e)
-        {
-            if (_selectedPoint?.OnEndDrag(e.Data) == false)
-                SetSelectedPoint(null);
-        }
-
-        private void OnPointBeginDrag(object sender, UICurveEditorPoint.EventArgs e)
-        {
-            var point = sender as UICurveEditorPoint;
-            if (_selectedPoint != point)
-                SetSelectedPoint(point);
-        }
-
-        private void OnPointDragging(object sender, UICurveEditorPoint.EventArgs e) => _selectedPoint?.owner?.Update();
-
-        private void OnPointClick(object sender, UICurveEditorPoint.EventArgs e)
-        {
-            var point = sender as UICurveEditorPoint;
-            if (!e.Data.dragging && e.IsPointEvent)
-                SetSelectedPoint(point);
-        }
+        private void SetHandleMode(CurveEditorPoint point, int mode) => point?.owner?.SetHandleMode(point, mode);
+        private void SetOutHandleMode(CurveEditorPoint point, int mode) => point?.owner?.SetOutHandleMode(point, mode);
+        private void SetInHandleMode(CurveEditorPoint point, int mode) => point?.owner?.SetInHandleMode(point, mode);
 
         public void ToggleHandleMode()
         {
-            if (_selectedPoint != null)
+            if (_canvas.selectedPoint != null)
             {
-                SetHandleMode(_selectedPoint, 1 - _selectedPoint.handleMode);
-                _selectedPoint.owner.Update();
+                SetHandleMode(_canvas.selectedPoint, 1 - _canvas.selectedPoint.handleMode);
+                _canvas.selectedPoint.owner.SetCurveFromPoints();
+                _canvas.SetVerticesDirty();
             }
         }
 
         public void ToggleOutHandleMode()
         {
-            if (_selectedPoint != null)
+            if (_canvas.selectedPoint != null)
             {
-                SetOutHandleMode(_selectedPoint, 1 - _selectedPoint.outHandleMode);
-                _selectedPoint.owner.Update();
+                SetOutHandleMode(_canvas.selectedPoint, 1 - _canvas.selectedPoint.outHandleMode);
+                _canvas.selectedPoint.owner.SetCurveFromPoints();
+                _canvas.SetVerticesDirty();
             }
         }
 
         public void ToggleInHandleMode()
         {
-            if (_selectedPoint != null)
+            if (_canvas.selectedPoint != null)
             {
-                SetInHandleMode(_selectedPoint, 1 - _selectedPoint.inHandleMode);
-                _selectedPoint.owner.Update();
+                SetInHandleMode(_canvas.selectedPoint, 1 - _canvas.selectedPoint.inHandleMode);
+                _canvas.selectedPoint.owner.SetCurveFromPoints();
+                _canvas.SetVerticesDirty();
             }
         }
 
         public void SetLinear()
         {
-            if (_selectedPoint == null)
+            if (_canvas.selectedPoint == null)
                 return;
 
-            var line = _selectedPoint.owner;
-
-            var idx = line.points.IndexOf(_selectedPoint);
+            var line = _canvas.selectedPoint.owner;
+            var idx = line.points.IndexOf(_canvas.selectedPoint);
             var curve = line.curve;
             var key = curve[idx];
 
@@ -352,6 +195,7 @@ namespace CurveEditor.UI
 
             curve.MoveKey(idx, key);
             line.SetPointsFromCurve();
+            _canvas.SetVerticesDirty();
         }
     }
 }
