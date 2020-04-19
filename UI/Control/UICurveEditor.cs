@@ -27,8 +27,15 @@ namespace CurveEditor.UI
                 canvasGroup.interactable = !value;
                 canvasGroup.blocksRaycasts = !value;
 
+                _canvas.readOnly = value;
                 _canvas.SetSelectedPoint(null);
             }
+        }
+
+        public bool allowKeyboardShortcuts
+        {
+            get { return _canvas.allowKeyboardShortcuts; }
+            set { _canvas.allowKeyboardShortcuts = value; }
         }
 
         public bool showScrubbers
