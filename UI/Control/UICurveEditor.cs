@@ -27,6 +27,7 @@ namespace CurveEditor.UI
                 canvasGroup.interactable = !value;
                 canvasGroup.blocksRaycasts = !value;
 
+                _canvas.readOnly = value;
                 _canvas.SetSelectedPoint(null);
             }
         }
