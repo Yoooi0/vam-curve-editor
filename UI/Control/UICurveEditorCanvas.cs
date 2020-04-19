@@ -1,4 +1,4 @@
-using Leap;
+﻿using Leap;
 using Leap.Unity.Swizzle;
 using System;
 using System.Collections.Generic;
@@ -56,10 +56,20 @@ namespace CurveEditor.UI
             {
                 //TODO: colors
                 foreach (var kv in _scrubberPositions)
+                {
+                    if (kv.Value < min.x || kv.Value > max.x)
+                        continue;
+
                     vh.DrawLine(new Vector2(kv.Value, min.y), new Vector2(kv.Value, max.y), 0.02f, Color.black, _viewMatrix);
+                }
 
                 foreach (var kv in _scrubberPositions)
+                {
+                    if (kv.Value < min.x || kv.Value > max.x)
+                        continue;
+
                     vh.DrawCircle(new Vector2(kv.Value, kv.Key.curve.Evaluate(kv.Value)), 0.05f, Color.white, _viewMatrix);
+                }
             }
         }
 

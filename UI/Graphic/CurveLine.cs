@@ -33,17 +33,26 @@ namespace CurveEditor.UI
         public void PopulateMesh(VertexHelper vh, Matrix4x4 viewMatrix, Bounds viewBounds)
         {
             var curvePoints = new List<Vector2>();
-            var from = Mathf.Min(viewBounds.min.x, curve.keys.First().time);
-            var to = Mathf.Max(viewBounds.max.x, curve.keys.Last().time);
+            var minT = viewBounds.min.x;
+            var maxT = viewBounds.max.x;
             for (var i = 0; i < evaluateCount; i++)
             {
-                var t = Mathf.Lerp(from, to, (float)i / (evaluateCount - 1));
+                var t = Mathf.Lerp(minT, maxT, (float)i / (evaluateCount - 1));
+                if (t < minT || t > maxT)
+                    continue;
+
                 curvePoints.Add(new Vector2(t, curve.Evaluate(t)));
             }
 
             vh.DrawLine(curvePoints, thickness, _colors.lineColor, viewMatrix);
-            foreach(var point in this.points)
+            foreach (var point in this.points)
+            {
+                //TODO: point radius
+                if (point.position.x + 0.25f < minT || point.position.x - 0.25f > maxT)
+                    continue;
+
                 point.PopulateMesh(vh, viewMatrix, viewBounds);
+            }
         }
 
         public void SetCurveFromPoints()
