@@ -155,7 +155,7 @@ namespace CurveEditor.UI
                     point.outHandlePosition = outHandleNormal * point.outHandleLength;
                 }
 
-                var inHandleNormal = -(MathUtils.VectorFromAngle(Mathf.Atan(key.inTangent))).normalized;
+                var inHandleNormal = -(MathUtils.VectorFromAngle(Mathf.Atan(key.inTangent))).normalized * scale;
                 if (point.inHandleMode == 1 && i > 0)
                 {
                     var x = key.inWeight * (key.time - curve[i - 1].time);
