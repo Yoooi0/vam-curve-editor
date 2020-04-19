@@ -83,16 +83,16 @@ namespace CurveEditor.UI
         {
             if (showHandles)
             {
-                vh.DrawLine(position, position + _outHandlePosition, _handleThickness, lineColor, viewMatrix);
-                vh.DrawLine(position, position + _inHandlePosition, _handleThickness, lineColor, viewMatrix);
+                vh.AddLine(position, position + _outHandlePosition, _handleThickness, lineColor, viewMatrix);
+                vh.AddLine(position, position + _inHandlePosition, _handleThickness, lineColor, viewMatrix);
             }
 
-            vh.DrawCircle(position, _pointRadius, pointColor, viewMatrix);
+            vh.AddCircle(position, _pointRadius, pointColor, viewMatrix);
 
             if (showHandles)
             {
-                vh.DrawCircle(position + _outHandlePosition, _handleRadius, outHandleColor, viewMatrix);
-                vh.DrawCircle(position + _inHandlePosition, _handleRadius, inHandleColor, viewMatrix);
+                vh.AddCircle(position + _outHandlePosition, _handleRadius, outHandleColor, viewMatrix);
+                vh.AddCircle(position + _inHandlePosition, _handleRadius, inHandleColor, viewMatrix);
             }
         }
 

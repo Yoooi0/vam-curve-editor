@@ -1,4 +1,4 @@
-﻿using CurveEditor.Utils;
+using CurveEditor.Utils;
 using Leap.Unity.Swizzle;
 using System.Collections.Generic;
 using UnityEngine;
@@ -22,25 +22,23 @@ namespace CurveEditor.UI
             vh.AddUIVertexQuad(vbo);
         }
 
-        public static void DrawCircle(this VertexHelper vh, Vector2 position, float radius, Color color, Matrix4x4 viewMatrix)
+        public static void AddCircle(this VertexHelper vh, Vector2 position, float radius, Color color, Matrix4x4 viewMatrix)
         {
             const int segments = 10;
 
             var prev = position;
             for (var i = 0; i < segments + 1; i++)
             {
-                var rad = Mathf.Deg2Rad * (i * (360f / segments));
-                var pos0 = prev;
-                var pos1 = position + new Vector2(radius * Mathf.Cos(rad), radius * Mathf.Sin(rad));
-                prev = pos1;
-                vh.AddUIVertexQuad(new[] { pos0, pos1, position, position }, color, viewMatrix);
+                var curr = position + MathUtils.VectorFromAngle(Mathf.Deg2Rad * (i * (360f / segments))) * radius;
+                vh.AddUIVertexQuad(new[] { prev, curr, position, position }, color, viewMatrix);
+                prev = curr;
             }
         }
 
-        public static void DrawLine(this VertexHelper vh, Vector2 from, Vector2 to, float thickness, Color color, Matrix4x4 viewMatrix)
-            => DrawLine(vh, new List<Vector2> { from, to }, thickness, color, viewMatrix);
+        public static void AddLine(this VertexHelper vh, Vector2 from, Vector2 to, float thickness, Color color, Matrix4x4 viewMatrix)
+            => AddLine(vh, new List<Vector2> { from, to }, thickness, color, viewMatrix);
 
-        public static void DrawLine(this VertexHelper vh, List<Vector2> points, float thickness, Color color, Matrix4x4 viewMatrix)
+        public static void AddLine(this VertexHelper vh, List<Vector2> points, float thickness, Color color, Matrix4x4 viewMatrix)
         {
             if (points == null || points.Count < 2)
                 return;

@@ -44,7 +44,7 @@ namespace CurveEditor.UI
                 curvePoints.Add(new Vector2(t, curve.Evaluate(t)));
             }
 
-            vh.DrawLine(curvePoints, thickness, _colors.lineColor, viewMatrix);
+            vh.AddLine(curvePoints, thickness, _colors.lineColor, viewMatrix);
             foreach (var point in this.points)
             {
                 //TODO: point radius
