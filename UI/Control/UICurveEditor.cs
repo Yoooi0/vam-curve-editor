@@ -32,6 +32,12 @@ namespace CurveEditor.UI
             }
         }
 
+        public bool allowKeyboardShortcuts
+        {
+            get { return _canvas.allowKeyboardShortcuts; }
+            set { _canvas.allowKeyboardShortcuts = value; }
+        }
+
         public bool showScrubbers
         {
             get { return _canvas.showScrubbers; }

@@ -26,6 +26,7 @@ namespace CurveEditor.UI
         public CurveEditorPoint selectedPoint { get; private set; } = null;
         public bool allowViewDragging { get; set; } = true;
         public bool allowViewZooming { get; set; } = true;
+        public bool allowKeyboardShortcuts { get; set; } = true;
         public bool readOnly { get; set; }
 
         public bool showScrubbers
@@ -64,6 +65,8 @@ namespace CurveEditor.UI
 
         protected void Update()
         {
+            if (!allowKeyboardShortcuts) return;
+
             if (selectedPoint != null)
             {
                 if (!readOnly && Input.GetKeyDown(KeyCode.Delete))
