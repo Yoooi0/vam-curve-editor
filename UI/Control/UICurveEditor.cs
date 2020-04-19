@@ -85,6 +85,9 @@ namespace CurveEditor.UI
             _canvasContainer.transform.SetParent(gameObject.transform, false);
             _canvasContainer.AddComponent<CanvasGroup>();
             _canvas = _canvasContainer.AddComponent<UICurveEditorCanvas>();
+            _canvas.rectTransform.anchorMin = new Vector2(0, 0);
+            _canvas.rectTransform.anchorMax = new Vector2(0, 0);
+            _canvas.rectTransform.pivot = new Vector2(0, 0);
             _canvas.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
             _canvas.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height - buttonContainerHeight);
 

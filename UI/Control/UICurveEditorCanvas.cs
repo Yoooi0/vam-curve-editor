@@ -1,4 +1,4 @@
-﻿using Leap;
+using Leap;
 using Leap.Unity.Swizzle;
 using System;
 using System.Collections.Generic;
@@ -45,9 +45,9 @@ namespace CurveEditor.UI
         {
             vh.Clear();
 
-            var min = _viewMatrixInv.MultiplyPoint3x4(-rectTransform.sizeDelta).xy();
+            var min = _viewMatrixInv.MultiplyPoint3x4(Vector2.zero).xy();
             var max = _viewMatrixInv.MultiplyPoint3x4(rectTransform.sizeDelta).xy();
-            var viewBounds = new Bounds((min + max) / 2, (max - min) / 2);
+            var viewBounds = new Bounds((min + max) / 2, max - min);
 
             foreach (var line in _lines)
                 line.PopulateMesh(vh, _viewMatrix, viewBounds);
