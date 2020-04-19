@@ -1,5 +1,4 @@
 using CurveEditor.Utils;
-using Leap.Unity.Swizzle;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -15,7 +14,7 @@ namespace CurveEditor.UI
             {
                 var vert = UIVertex.simpleVert;
                 vert.color = color;
-                vert.position = viewMatrix.MultiplyPoint3x4(vertices[i]).xy();
+                vert.position = viewMatrix.MultiplyPoint2d(vertices[i]);
                 vbo[i] = vert;
             }
 

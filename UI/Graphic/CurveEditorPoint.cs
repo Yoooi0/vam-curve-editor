@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 namespace CurveEditor.UI
 {
-    public class CurveEditorPoint : IDrawable
+    public class CurveEditorPoint
     {
         private float _pointRadius = 0.08f;
         private float _pointSkin = 0.05f;

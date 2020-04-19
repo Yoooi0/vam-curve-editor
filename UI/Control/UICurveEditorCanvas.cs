@@ -1,6 +1,4 @@
-﻿using Leap;
-using Leap.Unity.Swizzle;
-using System;
+﻿using CurveEditor.Utils;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -17,8 +15,8 @@ namespace CurveEditor.UI
         private Vector2 _cameraPosition = Vector2.zero;
         private Vector2 _dragStartPosition = Vector2.zero;
         private Vector2 _dragTranslation = Vector2.zero;
-        private float zoomValue = 100;
         private bool _showScrubbers = true;
+        private bool _showGrid = true;
         private Matrix4x4 _viewMatrix = Matrix4x4.identity;
 
         private Matrix4x4 _viewMatrixInv => _viewMatrix.inverse;
@@ -27,12 +25,18 @@ namespace CurveEditor.UI
         public bool allowViewDragging { get; set; } = true;
         public bool allowViewZooming { get; set; } = true;
         public bool allowKeyboardShortcuts { get; set; } = true;
-        public bool readOnly { get; set; }
+        public bool readOnly { get; set; } = false;
 
         public bool showScrubbers
         {
             get { return _showScrubbers; }
             set { _showScrubbers = value; SetVerticesDirty(); }
+        }
+
+        public bool showGrid
+        {
+            get { return _showGrid; }
+            set { _showGrid = value; SetVerticesDirty(); }
         }
 
         protected override void Awake()
@@ -45,37 +49,63 @@ namespace CurveEditor.UI
         {
             vh.Clear();
 
-            var min = _viewMatrixInv.MultiplyPoint3x4(Vector2.zero).xy();
-            var max = _viewMatrixInv.MultiplyPoint3x4(rectTransform.sizeDelta).xy();
+            var min = _viewMatrixInv.MultiplyPoint2d(Vector2.zero);
+            var max = _viewMatrixInv.MultiplyPoint2d(rectTransform.sizeDelta);
             var viewBounds = new Bounds((min + max) / 2, max - min);
 
+            if (_showGrid)
+                PopulateGrid(vh, viewBounds);
+            
             foreach (var line in _lines)
                 line.PopulateMesh(vh, _viewMatrix, viewBounds);
 
             if (_showScrubbers)
+                PopulateScrubbers(vh, viewBounds);
+        }
+
+        private void PopulateGrid(VertexHelper vh, Bounds bounds)
+        {
+            //TODO: colors, zoom
+            var min = bounds.min;
+            var max = bounds.max;
+            for (var v = Mathf.Floor(min.x); v <= Mathf.Ceil(max.x); v += 0.5f)
+                vh.AddLine(new Vector2(v, min.y), new Vector2(v, max.y), 0.01f, new Color(0.6f, 0.6f, 0.6f), _viewMatrix);
+            for (var v = Mathf.Floor(min.y); v <= Mathf.Ceil(max.y); v += 0.5f)
+                vh.AddLine(new Vector2(min.x, v), new Vector2(max.x, v), 0.01f, new Color(0.6f, 0.6f, 0.6f), _viewMatrix);
+
+            if(min.y < 0 && max.y > 0)
+                vh.AddLine(new Vector2(min.x, 0), new Vector2(max.x, 0), 0.04f, new Color(0.5f, 0.5f, 0.5f), _viewMatrix);
+            if (min.x < 0 && max.x > 0)
+                vh.AddLine(new Vector2(0, min.y), new Vector2(0, max.y), 0.04f, new Color(0.5f, 0.5f, 0.5f), _viewMatrix);
+        }
+
+        private void PopulateScrubbers(VertexHelper vh, Bounds bounds)
+        {
+            var min = bounds.min;
+            var max = bounds.max;
+
+            //TODO: colors
+            foreach (var kv in _scrubberPositions)
             {
-                //TODO: colors
-                foreach (var kv in _scrubberPositions)
-                {
-                    if (kv.Value < min.x || kv.Value > max.x)
-                        continue;
+                if (kv.Value < min.x || kv.Value > max.x)
+                    continue;
 
-                    vh.AddLine(new Vector2(kv.Value, min.y), new Vector2(kv.Value, max.y), 0.02f, Color.black, _viewMatrix);
-                }
+                vh.AddLine(new Vector2(kv.Value * kv.Key.scale.x, min.y), new Vector2(kv.Value * kv.Key.scale.x, max.y), 0.02f, Color.black, _viewMatrix);
+            }
 
-                foreach (var kv in _scrubberPositions)
-                {
-                    if (kv.Value + 0.05f < min.x || kv.Value - 0.05f > max.x)
-                        continue;
+            foreach (var kv in _scrubberPositions)
+            {
+                if (kv.Value + 0.05f < min.x || kv.Value - 0.05f > max.x)
+                    continue;
 
-                    vh.AddCircle(new Vector2(kv.Value, kv.Key.curve.Evaluate(kv.Value)), 0.05f, Color.white, _viewMatrix);
-                }
+                vh.AddCircle(new Vector2(kv.Value, kv.Key.curve.Evaluate(kv.Value)) * kv.Key.scale, 0.05f, Color.white, _viewMatrix);
             }
         }
 
         protected void Update()
         {
-            if (!allowKeyboardShortcuts) return;
+            if (!allowKeyboardShortcuts)
+                return;
 
             if (selectedPoint != null)
             {
@@ -92,21 +122,24 @@ namespace CurveEditor.UI
             {
                 if (Input.GetKeyDown(KeyCode.W))
                 {
-                    zoomValue *= 1.1f;
-                    UpdateViewMatrix();
+                    foreach (var line in _lines)
+                        line.scale *= 2;
                     SetVerticesDirty();
                 }
                 if (Input.GetKeyDown(KeyCode.S))
                 {
-                    zoomValue /= 1.1f;
-                    UpdateViewMatrix();
+                    foreach (var line in _lines)
+                        line.scale /= 2;
                     SetVerticesDirty();
                 }
             }
         }
 
         private void UpdateViewMatrix()
-            => _viewMatrix = Matrix4x4.TRS(_cameraPosition + _dragTranslation, Quaternion.identity, new Vector3(zoomValue, zoomValue, 1));
+        { 
+            // TODO: readd zoom
+            _viewMatrix = Matrix4x4.TRS(_cameraPosition + _dragTranslation, Quaternion.identity, new Vector3(100, 100, 1));
+        }
 
         public void SetViewToFit()
         {
@@ -166,7 +199,7 @@ namespace CurveEditor.UI
         public void OnBeginDrag(PointerEventData eventData)
         {
             Vector2 position;
-            if (!PointerEventToCanvasPosition(eventData, out position))
+            if (!ScreenToCanvasPosition(eventData, out position))
                 return;
 
             if (selectedPoint?.OnBeginDrag(position) == true)
@@ -193,7 +226,7 @@ namespace CurveEditor.UI
         public void OnDrag(PointerEventData eventData)
         {
             Vector2 position;
-            if (!PointerEventToCanvasPosition(eventData, out position))
+            if (!ScreenToCanvasPosition(eventData, out position))
                 return;
 
             if (selectedPoint?.OnDrag(position) == true)
@@ -214,7 +247,7 @@ namespace CurveEditor.UI
         public void OnEndDrag(PointerEventData eventData)
         {
             Vector2 position;
-            if (!PointerEventToCanvasPosition(eventData, out position))
+            if (!ScreenToCanvasPosition(eventData, out position))
                 return;
 
             if (selectedPoint?.OnEndDrag(position) == true)
@@ -237,7 +270,7 @@ namespace CurveEditor.UI
                 return;
 
             Vector2 position;
-            if (!PointerEventToCanvasPosition(eventData, out position))
+            if (!ScreenToCanvasPosition(eventData, out position))
                 return;
 
             if (selectedPoint?.OnPointerClick(position) == true)
@@ -267,7 +300,7 @@ namespace CurveEditor.UI
             SetSelectedPoint(null);
         }
 
-        private bool PointerEventToCanvasPosition(PointerEventData eventData, out Vector2 position)
+        private bool ScreenToCanvasPosition(PointerEventData eventData, out Vector2 position)
         {
             position = Vector2.zero;
 

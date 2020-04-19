@@ -25,7 +25,7 @@ namespace CurveEditor
                 _curveJSON = new JSONStorableAnimationCurve("Curve", CurveUpdated);
                 _curveJSON.val = AnimationCurve.EaseInOut(0, 0, 2, 1);
                 _curve2JSON = new JSONStorableAnimationCurve("Curve", CurveUpdated);
-                _curve2JSON.val = AnimationCurve.Linear(0f, 0.5f, 1f, 0.5f);
+                _curve2JSON.val = AnimationCurve.EaseInOut(0f, 1f, 1f, 0f);
 
                 CreateUI();
             }
@@ -66,6 +66,7 @@ namespace CurveEditor
             _curveEditor = new UICurveEditor(container, 520, container.height, buttons: curveEditorButtons);
             _curveEditor.AddCurve(_curveJSON, UICurveLineColors.CreateFrom(new Color(0.388f, 0.698f, 0.890f)));
             _curveEditor.AddCurve(_curve2JSON, UICurveLineColors.CreateFrom(new Color(0.890f, 0.388f, 0.398f)));
+            _curveEditor.SetViewToFit();
 
             var resetButton = CreateButton("Reset");
             var playButton = CreateButton("Play");
@@ -93,13 +94,22 @@ namespace CurveEditor
             var showScrubberToggle = CreateToggle(showScrubberStorable);
             showScrubberStorable.setCallbackFunction = v => _curveEditor.showScrubbers = v;
 
-            var sliderStorable = new JSONStorableFloat("Scrubber time", 0, 0, 1);
-            var slider = CreateSlider(sliderStorable);
+            var scrubberSliderStorable = new JSONStorableFloat("Scrubber time", 0, 0, 1);
+            var scrubberSlider = CreateSlider(scrubberSliderStorable);
 
-            sliderStorable.setCallbackFunction = v =>
+            scrubberSliderStorable.setCallbackFunction = v =>
             {
                 _curveEditor.SetScrubber(_curveJSON, v);
                 _curveEditor.SetScrubber(_curve2JSON, 1 - v);
+            };
+
+            var scaleSliderStorable = new JSONStorableFloat("Scale", 1, 0.5f, 2);
+            var scaleSlider = CreateSlider(scaleSliderStorable);
+
+            scaleSliderStorable.setCallbackFunction = v =>
+            {
+                _curveEditor.SetScale(_curveJSON, new Vector2(1, v));
+                _curveEditor.SetScale(_curve2JSON, new Vector2(v, 1));
             };
         }
 

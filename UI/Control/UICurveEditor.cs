@@ -156,6 +156,16 @@ namespace CurveEditor.UI
             _canvas.SetScrubberPosition(_storableToLineMap[storable], time);
         }
 
+        public void SetScale(IStorableAnimationCurve storable, Vector2 scale)
+        {
+            CurveLine line;
+            if (!_storableToLineMap.TryGetValue(storable, out line))
+                return;
+
+            line.scale = scale;
+            _canvas.SetVerticesDirty();
+        }
+
         public void SetViewToFit() => _canvas.SetViewToFit();
 
         public void ToggleHandleMode()

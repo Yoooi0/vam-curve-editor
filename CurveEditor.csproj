@@ -92,7 +92,6 @@
     <Compile Include="IStorableAnimationCurve.cs" />
     <Compile Include="JSONStorableAnimationCurve.cs" />
     <Compile Include="UI\Control\UICurveEditorCanvas.cs" />
-    <Compile Include="UI\Graphic\IDrawable.cs" />
     <Compile Include="UI\Control\UICurveEditor.cs" />
     <Compile Include="UI\Graphic\CurveEditorPoint.cs" />
     <Compile Include="UI\Control\UIColors.cs" />
