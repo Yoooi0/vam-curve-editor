@@ -162,7 +162,7 @@ namespace CurveEditor.UI
             if (!_storableToLineMap.TryGetValue(storable, out line))
                 return;
 
-            line.valueBounds = new Bounds((max - min) / 2, max - min);
+            line.drawScale = DrawScaleOffset.FromValueBounds(new Bounds((max + min) / 2, max - min));
             _canvas.SetVerticesDirty();
         }
 

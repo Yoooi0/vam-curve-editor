@@ -25,8 +25,6 @@ namespace CurveEditor.UI
         private Vector2 _outHandlePosition = Vector2.right * 0.5f;
         private Vector2 _inHandlePosition = Vector2.left * 0.5f;
 
-        private DrawScaleOffset _drawScale;
-
         public CurveLine parent { get; private set; } = null;
         public bool showHandles { get; set; } = false;
         public Color pointColor { get; set; } = new Color(1, 1, 1);
@@ -83,63 +81,49 @@ namespace CurveEditor.UI
             this.parent = parent;
         }
 
-        public void UpdateDrawScale(DrawScaleOffset drawScale)
+        public void PopulateMesh(VertexHelper vh, Matrix4x4 viewMatrix, Bounds viewBounds)
         {
-            _drawScale = drawScale;
-        }
-
-        public float ViewDistance(Vector2 point)
-        {
-            return Vector2.Distance(_drawScale.Apply(position), point);
-        }
-
-        public void PopulateMesh(VertexHelper vh, Matrix4x4 viewMatrix)
-        {
-            var point = _drawScale.Apply(position);
-
             //TODO: point radius
-            if (point.x < _drawScale.viewBounds.min.x || point.x > _drawScale.viewBounds.max.x || point.y < _drawScale.viewBounds.min.y || point.y > _drawScale.viewBounds.max.y)
+            if (position.x < viewBounds.min.x || position.x > viewBounds.max.x || position.y < viewBounds.min.y || position.y > viewBounds.max.y)
                 return;
 
             if (showHandles)
             {
-                vh.AddLine(point, point + _outHandlePosition, _handleThickness, lineColor, viewMatrix);
-                vh.AddLine(point, point + _inHandlePosition, _handleThickness, lineColor, viewMatrix);
+                vh.AddLine(position, position + _outHandlePosition, _handleThickness, lineColor, viewMatrix);
+                vh.AddLine(position, position + _inHandlePosition, _handleThickness, lineColor, viewMatrix);
             }
 
-            vh.AddCircle(point, _pointRadius, pointColor, viewMatrix);
+            vh.AddCircle(position, _pointRadius, pointColor, viewMatrix);
 
             if (showHandles)
             {
-                vh.AddCircle(point + _outHandlePosition, _handleRadius, outHandleColor, viewMatrix);
-                vh.AddCircle(point + _inHandlePosition, _handleRadius, inHandleColor, viewMatrix);
+                vh.AddCircle(position + _outHandlePosition, _handleRadius, outHandleColor, viewMatrix);
+                vh.AddCircle(position + _inHandlePosition, _handleRadius, inHandleColor, viewMatrix);
             }
         }
 
-        public bool OnBeginDrag(Vector2 viewPoint)
+        public bool OnBeginDrag(Vector2 point)
         {
-            var viewPosition = _drawScale.Apply(position);
-
-            if (Vector2.Distance(viewPoint, viewPosition) <= _pointRadius + _pointSkin)
+            if (Vector2.Distance(point, position) <= _pointRadius + _pointSkin)
             {
                 _isDraggingPoint = true;
-                position = viewPoint;
+                this.position = point;
                 return true;
             }
 
             if (!showHandles)
                 return false;
 
-            if (Vector3.Distance(viewPoint, viewPosition + _outHandlePosition) <= _handleRadius + _handleSkin)
+            if (Vector3.Distance(point, position + _outHandlePosition) <= _handleRadius + _handleSkin)
             {
                 _isDraggingOutHandle = true;
-                SetOutHandlePosition(_drawScale.Reverse(viewPoint) - position);
+                SetOutHandlePosition(point - position);
                 return true;
             }
-            else if (Vector2.Distance(viewPoint, viewPosition + _inHandlePosition) <= _handleRadius + _handleSkin)
+            else if (Vector2.Distance(point, position + _inHandlePosition) <= _handleRadius + _handleSkin)
             {
                 _isDraggingInHandle = true;
-                SetInHandlePosition(_drawScale.Reverse(viewPoint) - position);
+                SetInHandlePosition(point - position);
                 return true;
             }
 
@@ -149,8 +133,6 @@ namespace CurveEditor.UI
 
         public bool OnDrag(Vector2 point)
         {
-            point = _drawScale.Reverse(point);
-
             if (!_isDraggingPoint && !_isDraggingOutHandle && !_isDraggingInHandle)
                 return false;
 
@@ -175,8 +157,6 @@ namespace CurveEditor.UI
 
         public bool OnPointerClick(Vector2 point)
         {
-            point = _drawScale.Reverse(point);
-
             if (Vector2.Distance(point, position) <= _pointRadius + _pointSkin) return true;
 
             if (!showHandles) return false;

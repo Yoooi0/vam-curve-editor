@@ -1,4 +1,5 @@
 ﻿using CurveEditor.Utils;
+using Leap;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -49,34 +50,24 @@ namespace CurveEditor.UI
         {
             vh.Clear();
 
+            //TODO: prescale viewBounds for each line?
             var min = _viewMatrixInv.MultiplyPoint2d(Vector2.zero);
             var max = _viewMatrixInv.MultiplyPoint2d(rectTransform.sizeDelta);
             var viewBounds = new Bounds((min + max) / 2, max - min);
-
-            foreach (var line in _lines)
-                line.UpdateDrawScale(viewBounds);
 
             if (_showGrid)
                 PopulateGrid(vh, viewBounds);
 
             if (_showScrubbers)
-            {
                 foreach (var kv in _scrubberPositions)
-                {
-                    kv.Key.PopulateScrubberLine(vh, _viewMatrix, kv.Value);
-                }
-            }
+                    kv.Key.PopulateScrubberLine(vh, _viewMatrix, viewBounds, kv.Value);
 
             foreach (var line in _lines)
-                line.PopulateMesh(vh, _viewMatrix);
+                line.PopulateMesh(vh, _viewMatrix, viewBounds);
 
             if (_showScrubbers)
-            {
                 foreach (var kv in _scrubberPositions)
-                {
-                    kv.Key.PopulateScrubberPoints(vh, _viewMatrix, kv.Value);
-                }
-            }
+                    kv.Key.PopulateScrubberPoints(vh, _viewMatrix, viewBounds, kv.Value);
         }
 
         private void PopulateGrid(VertexHelper vh, Bounds bounds)
@@ -117,13 +108,13 @@ namespace CurveEditor.UI
                 if (Input.GetKeyDown(KeyCode.W))
                 {
                     foreach (var line in _lines)
-                        line.valueBounds = new Bounds(line.valueBounds.center, new Vector3(line.valueBounds.size.x * 2f, line.valueBounds.size.y, 0f));
+                        line.drawScale = DrawScaleOffset.Resize(line.drawScale, 2f);
                     SetVerticesDirty();
                 }
                 if (Input.GetKeyDown(KeyCode.S))
                 {
                     foreach (var line in _lines)
-                        line.valueBounds = new Bounds(line.valueBounds.center, new Vector3(line.valueBounds.size.x * 0.5f, line.valueBounds.size.y, 0f));
+                        line.drawScale = DrawScaleOffset.Resize(line.drawScale, 0.5f);
                     SetVerticesDirty();
                 }
             }
@@ -137,22 +128,31 @@ namespace CurveEditor.UI
 
         public void SetViewToFit()
         {
+            UpdateViewMatrix();
+
             float minX = float.PositiveInfinity, minY = float.PositiveInfinity;
             float maxX = float.NegativeInfinity, maxY = float.NegativeInfinity;
-            foreach (var point in _lines.SelectMany(l => l.points))
+            foreach (var key in _lines.SelectMany(l => l.curve.keys))
             {
-                maxX = Mathf.Max(maxX, point.position.x);
-                minX = Mathf.Min(minX, point.position.x);
-                maxY = Mathf.Max(maxY, point.position.y);
-                minY = Mathf.Min(minY, point.position.y);
+                //TODO: apply drawScale to preserve current?
+                maxX = Mathf.Max(maxX, key.time);
+                minX = Mathf.Min(minX, key.time);
+                maxY = Mathf.Max(maxY, key.value);
+                minY = Mathf.Min(minY, key.value);
             }
-            var min = new Vector2(minX, minY);
-            var max = new Vector2(maxX, maxY);
-            var valueBounds = new Bounds((max - min) / 2, max - min);
+
+            var valueMin = new Vector2(minX, minY);
+            var valueMax = new Vector2(maxX, maxY);
+            var valueBounds = new Bounds((valueMax + valueMin) / 2, valueMax - valueMin);
+
+            var viewMin = _viewMatrixInv.MultiplyPoint2d(Vector2.zero);
+            var viewMax = _viewMatrixInv.MultiplyPoint2d(rectTransform.sizeDelta);
+            var viewBounds = new Bounds((viewMin + viewMax) / 2, viewMax - viewMin);
+
             foreach (var line in _lines)
-            {
-                line.valueBounds = valueBounds;
-            }
+                line.drawScale = DrawScaleOffset.FromViewBounds(valueBounds, viewBounds);
+
+            //TODO: reset camera
             SetVerticesDirty();
         }
 
@@ -281,7 +281,7 @@ namespace CurveEditor.UI
                 return;
             }
 
-            var closest = _lines.SelectMany(l => l.points).OrderBy(p => p.ViewDistance(point)).FirstOrDefault();
+            var closest = _lines.SelectMany(l => l.points).OrderBy(p => Vector2.Distance(p.position, point)).FirstOrDefault();
             if (closest?.OnPointerClick(point) == true)
             {
                 SetSelectedPoint(closest);
@@ -290,9 +290,9 @@ namespace CurveEditor.UI
 
             if (eventData.clickCount > 0 && eventData.clickCount % 2 == 0)
             {
-                var closestLine = _lines.OrderBy(l => l.ViewDistance(point)).FirstOrDefault();
+                var closestLine = _lines.OrderBy(l => l.DistanceToPoint(point)).FirstOrDefault();
 
-                var created = closestLine.CreatePointFromView(point);
+                var created = closestLine.CreatePoint(point);
                 closestLine.SetCurveFromPoints();
                 SetVerticesDirty();
                 SetSelectedPoint(created);

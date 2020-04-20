@@ -66,11 +66,11 @@ namespace CurveEditor
             _curveEditor = new UICurveEditor(container, 520, container.height, buttons: curveEditorButtons);
             _curveEditor.AddCurve(_curve1JSON, UICurveLineColors.CreateFrom(new Color(0.388f, 0.698f, 0.890f)));
             _curveEditor.AddCurve(_curve2JSON, UICurveLineColors.CreateFrom(new Color(0.890f, 0.388f, 0.398f)));
-            _curveEditor.SetViewToFit();
 
             var resetButton = CreateButton("Reset");
             var playButton = CreateButton("Play");
             var stopButton = CreateButton("Stop");
+            var fitButton = CreateButton("Fit View");
 
             resetButton.button.onClick.AddListener(() =>
             {
@@ -86,6 +86,10 @@ namespace CurveEditor
             stopButton.button.onClick.AddListener(() =>
             {
                 _animation.Stop();
+            });
+            fitButton.button.onClick.AddListener(() =>
+            {
+                _curveEditor.SetViewToFit();
             });
 
             var readOnlyStorable = new JSONStorableBool("ReadOnly", false);
@@ -117,16 +121,16 @@ namespace CurveEditor
 
             timeScaleSliderStorable.setCallbackFunction = v =>
             {
-                _curveEditor.SetValueBounds(_curve1JSON, Vector2.zero, new Vector2(2 * v, valueScaleSliderStorable.val));
-                _curveEditor.SetValueBounds(_curve2JSON, Vector2.zero, new Vector2(2 * v, valueScaleSliderStorable.val));
+                _curveEditor.SetValueBounds(_curve1JSON, Vector2.zero, new Vector2(v, valueScaleSliderStorable.val));
+                _curveEditor.SetValueBounds(_curve2JSON, Vector2.zero, new Vector2(v, valueScaleSliderStorable.val));
             };
 
             var valueScaleSlider = CreateSlider(valueScaleSliderStorable);
 
             valueScaleSliderStorable.setCallbackFunction = v =>
             {
-                _curveEditor.SetValueBounds(_curve1JSON, Vector2.zero, new Vector2(2 * timeScaleSliderStorable.val, v));
-                _curveEditor.SetValueBounds(_curve2JSON, Vector2.zero, new Vector2(2 * timeScaleSliderStorable.val, v));
+                _curveEditor.SetValueBounds(_curve1JSON, Vector2.zero, new Vector2(timeScaleSliderStorable.val, v));
+                _curveEditor.SetValueBounds(_curve2JSON, Vector2.zero, new Vector2(timeScaleSliderStorable.val, v));
             };
         }
 

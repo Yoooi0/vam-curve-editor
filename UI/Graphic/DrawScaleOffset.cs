@@ -1,32 +1,53 @@
+using System;
 using UnityEngine;
 
 namespace CurveEditor.UI
 {
-    public struct DrawScaleOffset
+    public class DrawScaleOffset
     {
-        public Bounds valueBounds;
-        public Bounds viewBounds;
-        public Vector2 offset;
-        public Vector2 ratio;
+        public Vector2 offset { get; private set; } = new Vector2(0, 0);
+        public Vector2 ratio { get; private set; } = new Vector2(1f, 1f);
 
-        public static DrawScaleOffset FromBounds(Bounds viewBounds, Bounds valueBounds)
+        public static DrawScaleOffset FromValueBounds(Bounds valueBounds)
         {
-            DrawScaleOffset value;
-            value.viewBounds = viewBounds;
-            value.valueBounds = valueBounds;
-            value.offset = new Vector2(valueBounds.min.x * viewBounds.size.x, valueBounds.min.y * viewBounds.size.y);
-            value.ratio = new Vector2(1f / valueBounds.size.x * viewBounds.size.x, 1f / valueBounds.size.y * viewBounds.size.y);
-            return value;
+            return new DrawScaleOffset()
+            {
+                offset = new Vector2(valueBounds.min.x, valueBounds.min.y),
+                ratio = new Vector2(1f / valueBounds.size.x, 1f / valueBounds.size.y)
+            };
         }
 
-        public Vector2 Apply(Vector2 value)
+        public static DrawScaleOffset FromViewBounds(Bounds valueBounds, Bounds viewBounds)
         {
-            return value * ratio + offset;
+            return new DrawScaleOffset()
+            {
+                offset = new Vector2(valueBounds.min.x * viewBounds.size.x, valueBounds.min.y * viewBounds.size.y),
+                ratio = new Vector2(1f / valueBounds.size.x * viewBounds.size.x, 1f / valueBounds.size.y * viewBounds.size.y)
+            };
         }
 
-        public Vector2 Reverse(Vector2 value)
+        public static DrawScaleOffset FromOffsetRatio(Vector2 offset, Vector2 ratio)
         {
-            return (value - offset) / ratio;
+            return new DrawScaleOffset()
+            {
+                offset = offset,
+                ratio = ratio
+            };
         }
+        public static DrawScaleOffset Resize(DrawScaleOffset drawScale, float v)
+        {
+            return new DrawScaleOffset()
+            {
+                offset = drawScale.offset,
+                ratio = drawScale.ratio * v
+            };
+        }
+
+        public Vector2 Apply(Vector2 value) => value * ratio + offset;
+        public Vector2 Reverse(Vector2 value) => (value - offset) / ratio;
+        public float ApplyX(float x) => x * ratio.x / offset.x;
+        public float ApplyY(float y) => y * ratio.y / offset.y;
+        public float ReverseX(float x) => (x - offset.x) / ratio.x;
+        public float ReverseY(float y) => (y - offset.y) / ratio.y;
     }
 }

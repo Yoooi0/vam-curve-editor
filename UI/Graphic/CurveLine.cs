@@ -11,14 +11,13 @@ namespace CurveEditor.UI
         private readonly IStorableAnimationCurve _storable;
         private readonly UICurveLineColors _colors;
         private CurveEditorPoint _selectedPoint;
-        private Bounds _valuebounds = new Bounds(Vector2.one / 2f, Vector2.one);
-        private DrawScaleOffset _drawScale;
+        private DrawScaleOffset _drawScale = new DrawScaleOffset();
         public readonly List<CurveEditorPoint> points;
 
-        public Bounds valueBounds
+        public DrawScaleOffset drawScale
         {
-            get { return _valuebounds; }
-            set { _valuebounds = value; SetPointsFromCurve(); }
+            get { return _drawScale; }
+            set { _drawScale = value; SetPointsFromCurve(); }
         }
 
         public float thickness { get; set; } = 0.04f;
@@ -35,26 +34,16 @@ namespace CurveEditor.UI
             SetPointsFromCurve();
         }
 
-        public void UpdateDrawScale(Bounds viewBounds)
-        {
-            _drawScale = DrawScaleOffset.FromBounds(viewBounds, valueBounds);
-            foreach (var point in points)
-                point.UpdateDrawScale(_drawScale);
-        }
-
-        public float ViewDistance(Vector2 point)
-        {
-            return Mathf.Abs(_drawScale.Apply(point).y - curve.Evaluate(point.x));
-        }
-
-        public void PopulateMesh(VertexHelper vh, Matrix4x4 viewMatrix)
+        public void PopulateMesh(VertexHelper vh, Matrix4x4 viewMatrix, Bounds viewBounds)
         {
             var curvePoints = new List<Vector2>();
+            var minT = _drawScale.Reverse(viewBounds.min).x;
+            var maxT = _drawScale.Reverse(viewBounds.max).x;
             for (var i = 0; i < evaluateCount; i++)
             {
                 //TODO: clip Y?
-                var t = Mathf.Lerp(_drawScale.valueBounds.min.x, _drawScale.valueBounds.max.x, (float)i / (evaluateCount - 1));
-                if (t < _drawScale.valueBounds.min.x || t > _drawScale.valueBounds.max.x)
+                var t = Mathf.Lerp(minT, maxT, (float)i / (evaluateCount - 1));
+                if (t < minT || t > maxT)
                     continue;
 
                 var point = _drawScale.Apply(new Vector2(t, curve.Evaluate(t)));
@@ -63,26 +52,25 @@ namespace CurveEditor.UI
 
             vh.AddLine(curvePoints, thickness, _colors.lineColor, viewMatrix);
             foreach (var point in points)
-            {
-                point.PopulateMesh(vh, viewMatrix);
-            }
+                point.PopulateMesh(vh, viewMatrix, viewBounds);
         }
 
-        public void PopulateScrubberLine(VertexHelper vh, Matrix4x4 viewMatrix, float x)
+        public void PopulateScrubberLine(VertexHelper vh, Matrix4x4 viewMatrix, Bounds viewBounds, float x)
         {
-            if (x < valueBounds.min.x || x > valueBounds.max.x)
+            var min = _drawScale.Reverse(viewBounds.min);
+            var max = _drawScale.Reverse(viewBounds.max);
+            if (x < min.x || x > max.x)
                 return;
 
-            var viewX = x * _drawScale.ratio.x + _drawScale.offset.x;
-            vh.AddLine(new Vector2(viewX, _drawScale.viewBounds.min.y), new Vector2(viewX, _drawScale.viewBounds.max.y), 0.02f, Color.black, viewMatrix);
+            vh.AddLine(_drawScale.Apply(new Vector2(x, min.y)), _drawScale.Apply(new Vector2(x, max.y)), 0.02f, Color.black, viewMatrix);
         }
 
-        public void PopulateScrubberPoints(VertexHelper vh, Matrix4x4 viewMatrix, float x)
+        public void PopulateScrubberPoints(VertexHelper vh, Matrix4x4 viewMatrix, Bounds viewBounds, float x)
         {
-            if (x < valueBounds.min.x || x > valueBounds.max.x)
-                return;
-
-            if (x + 0.05f < _drawScale.viewBounds.min.x || x - 0.03f > _drawScale.viewBounds.max.x)
+            //TODO: clip Y
+            var min = _drawScale.Reverse(viewBounds.min);
+            var max = _drawScale.Reverse(viewBounds.max);
+            if (x + 0.06f < min.x || x - 0.06f > max.x)
                 return;
 
             vh.AddCircle(_drawScale.Apply(new Vector2(x, curve.Evaluate(x))), 0.03f, Color.white, viewMatrix);
@@ -98,9 +86,9 @@ namespace CurveEditor.UI
             {
                 var point = points[i];
 
-                var position = point.position;
-                var outPosition = point.outHandlePosition;
-                var inPosition = point.inHandlePosition;
+                var position = _drawScale.Reverse(point.position);
+                var outPosition = _drawScale.Reverse(point.outHandlePosition);
+                var inPosition = _drawScale.Reverse(point.inHandlePosition);
 
                 var key = new Keyframe(position.x, position.y);
                 key.weightedMode = (WeightedMode)(point.inHandleMode | point.outHandleMode << 1);
@@ -162,7 +150,7 @@ namespace CurveEditor.UI
                 var point = points[i];
                 var key = curve[i];
 
-                point.position = new Vector2(key.time, key.value);
+                point.position = _drawScale.Apply(new Vector2(key.time, key.value));
 
                 if (key.inTangent != key.outTangent)
                     point.handleMode = 1;
@@ -170,8 +158,7 @@ namespace CurveEditor.UI
                 if (((int)key.weightedMode & 1) > 0) point.inHandleMode = 1;
                 if (((int)key.weightedMode & 2) > 0) point.outHandleMode = 1;
 
-                // TODO: Not sure
-                var outHandleNormal = (MathUtils.VectorFromAngle(Mathf.Atan(key.outTangent))).normalized;
+                var outHandleNormal = _drawScale.Apply(MathUtils.VectorFromAngle(Mathf.Atan(key.outTangent)).normalized);
                 if (point.outHandleMode == 1 && i < curve.length - 1)
                 {
                     var x = key.outWeight * (curve[i + 1].time - key.time);
@@ -184,8 +171,7 @@ namespace CurveEditor.UI
                     point.outHandlePosition = outHandleNormal * point.outHandleLength;
                 }
 
-                // TODO: Not sure
-                var inHandleNormal = -(MathUtils.VectorFromAngle(Mathf.Atan(key.inTangent))).normalized;
+                var inHandleNormal = _drawScale.Apply(-MathUtils.VectorFromAngle(Mathf.Atan(key.inTangent)).normalized);
                 if (point.inHandleMode == 1 && i > 0)
                 {
                     var x = key.inWeight * (key.time - curve[i - 1].time);
@@ -202,11 +188,6 @@ namespace CurveEditor.UI
                 SetOutHandleMode(point, point.outHandleMode);
                 SetInHandleMode(point, point.inHandleMode);
             }
-        }
-
-        public CurveEditorPoint CreatePointFromView(Vector2 position = new Vector2())
-        {
-            return CreatePoint(_drawScale.Reverse(position));
         }
 
         public CurveEditorPoint CreatePoint(Vector2 position = new Vector2())
@@ -263,6 +244,12 @@ namespace CurveEditor.UI
         {
             point.inHandleMode = mode;
             point.inHandleColor = mode == 0 ? _colors.inHandleColor : _colors.inHandleColorWeighted;
+        }
+
+        public float DistanceToPoint(Vector2 point)
+        {
+            point = _drawScale.Reverse(point);
+            return Mathf.Abs(point.y - curve.Evaluate(point.x));
         }
 
         private class UICurveEditorPointComparer : IComparer<CurveEditorPoint>
