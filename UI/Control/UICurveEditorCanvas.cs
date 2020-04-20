@@ -1,4 +1,4 @@
-﻿using CurveEditor.Utils;
+using CurveEditor.Utils;
 using Leap;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,6 +19,8 @@ namespace CurveEditor.UI
         private bool _showScrubbers = true;
         private bool _showGrid = true;
         private Matrix4x4 _viewMatrix = Matrix4x4.identity;
+        private Color _gridColor = new Color(0.6f, 0.6f, 0.6f);
+        private Color _girdAxisColor = new Color(0.5f, 0.5f, 0.5f);
 
         private Matrix4x4 _viewMatrixInv => _viewMatrix.inverse;
 
@@ -72,18 +74,18 @@ namespace CurveEditor.UI
 
         private void PopulateGrid(VertexHelper vh, Bounds bounds)
         {
-            //TODO: colors, zoom
+            //TODO: zoom
             var min = bounds.min;
             var max = bounds.max;
             for (var v = Mathf.Floor(min.x); v <= Mathf.Ceil(max.x); v += 0.5f)
-                vh.AddLine(new Vector2(v, min.y), new Vector2(v, max.y), 0.01f, new Color(0.6f, 0.6f, 0.6f), _viewMatrix);
+                vh.AddLine(new Vector2(v, min.y), new Vector2(v, max.y), 0.01f, _gridColor, _viewMatrix);
             for (var v = Mathf.Floor(min.y); v <= Mathf.Ceil(max.y); v += 0.5f)
-                vh.AddLine(new Vector2(min.x, v), new Vector2(max.x, v), 0.01f, new Color(0.6f, 0.6f, 0.6f), _viewMatrix);
+                vh.AddLine(new Vector2(min.x, v), new Vector2(max.x, v), 0.01f, _gridColor, _viewMatrix);
 
             if (min.y < 0 && max.y > 0)
-                vh.AddLine(new Vector2(min.x, 0), new Vector2(max.x, 0), 0.04f, new Color(0.5f, 0.5f, 0.5f), _viewMatrix);
+                vh.AddLine(new Vector2(min.x, 0), new Vector2(max.x, 0), 0.04f, _girdAxisColor, _viewMatrix);
             if (min.x < 0 && max.x > 0)
-                vh.AddLine(new Vector2(0, min.y), new Vector2(0, max.y), 0.04f, new Color(0.5f, 0.5f, 0.5f), _viewMatrix);
+                vh.AddLine(new Vector2(0, min.y), new Vector2(0, max.y), 0.04f, _girdAxisColor, _viewMatrix);
         }
 
         protected void Update()
