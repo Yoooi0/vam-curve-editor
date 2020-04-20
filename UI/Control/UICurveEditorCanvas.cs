@@ -1,5 +1,4 @@
 ﻿using CurveEditor.Utils;
-using Leap;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -12,6 +11,7 @@ namespace CurveEditor.UI
     {
         private readonly List<CurveLine> _lines = new List<CurveLine>();
         private readonly Dictionary<CurveLine, float> _scrubberPositions = new Dictionary<CurveLine, float>();
+        private readonly Dictionary<IStorableAnimationCurve, CurveLine> _storableToLineMap = new Dictionary<IStorableAnimationCurve, CurveLine>();
 
         private Vector2 _cameraPosition = Vector2.zero;
         private Vector2 _dragStartPosition = Vector2.zero;
@@ -76,7 +76,6 @@ namespace CurveEditor.UI
 
         private void PopulateGrid(VertexHelper vh, Bounds bounds)
         {
-            //TODO: zoom
             var min = bounds.min;
             var max = bounds.max;
             for (var v = Mathf.Floor(min.x); v <= Mathf.Ceil(max.x); v += 0.5f)
@@ -141,51 +140,35 @@ namespace CurveEditor.UI
 
         private void UpdateViewMatrix()
             => _viewMatrix = Matrix4x4.TRS(_cameraPosition + _dragTranslation, Quaternion.identity, new Vector3(_zoom, _zoom, 1));
-
-        public void SetViewToFit()
-        {
-            UpdateViewMatrix();
-
-            float minX = float.PositiveInfinity, minY = float.PositiveInfinity;
-            float maxX = float.NegativeInfinity, maxY = float.NegativeInfinity;
-            foreach (var key in _lines.SelectMany(l => l.curve.keys))
-            {
-                //TODO: apply drawScale to preserve current?
-                maxX = Mathf.Max(maxX, key.time);
-                minX = Mathf.Min(minX, key.time);
-                maxY = Mathf.Max(maxY, key.value);
-                minY = Mathf.Min(minY, key.value);
-            }
-
-            var valueMin = new Vector2(minX, minY);
-            var valueMax = new Vector2(maxX, maxY);
-            var valueBounds = new Bounds((valueMax + valueMin) / 2, valueMax - valueMin);
-
-            var viewMin = _viewMatrixInv.MultiplyPoint2d(Vector2.zero);
-            var viewMax = _viewMatrixInv.MultiplyPoint2d(rectTransform.sizeDelta);
-            var viewBounds = new Bounds((viewMin + viewMax) / 2, viewMax - viewMin);
-
-            foreach (var line in _lines)
-                line.drawScale = DrawScaleOffset.FromViewBounds(valueBounds, viewBounds);
-
-            _cameraPosition = Vector2.zero;
-            UpdateViewMatrix();
-            SetVerticesDirty();
-        }
-
-        public CurveLine CreateCurve(IStorableAnimationCurve storable, UICurveLineColors colors, float thickness)
+        public void CreateCurve(IStorableAnimationCurve storable, UICurveLineColors colors, float thickness)
         {
             var line = new CurveLine(storable, colors);
+            line.thickness = thickness;
             _lines.Add(line);
             _scrubberPositions.Add(line, line.curve.keys.First().time);
+            _storableToLineMap.Add(storable, line);
             SetVerticesDirty();
-            return line;
         }
 
-        public void RemoveCurve(CurveLine line)
+        public void RemoveCurve(IStorableAnimationCurve storable)
         {
+            if (!_storableToLineMap.ContainsKey(storable))
+                return;
+
+            var line = _storableToLineMap[storable];
             _lines.Remove(line);
             _scrubberPositions.Remove(line);
+            _storableToLineMap.Remove(storable);
+            SetVerticesDirty();
+        }
+
+        public void UpdateCurve(IStorableAnimationCurve storable)
+        {
+            CurveLine line;
+            if (!_storableToLineMap.TryGetValue(storable, out line))
+                return;
+
+            line.SetPointsFromCurve();
             SetVerticesDirty();
         }
 
@@ -205,16 +188,6 @@ namespace CurveEditor.UI
             selectedPoint = point;
             SetVerticesDirty();
         }
-
-        public void SetScrubberPosition(CurveLine line, float time)
-        {
-            if (!_scrubberPositions.ContainsKey(line))
-                return;
-
-            _scrubberPositions[line] = time;
-            SetVerticesDirty();
-        }
-
         public void OnBeginDrag(PointerEventData eventData)
         {
             Vector2 position;
@@ -317,6 +290,126 @@ namespace CurveEditor.UI
             }
 
             SetSelectedPoint(null);
+        }
+
+        public void SetViewToFit()
+        {
+            UpdateViewMatrix();
+
+            float minX = float.PositiveInfinity, minY = float.PositiveInfinity;
+            float maxX = float.NegativeInfinity, maxY = float.NegativeInfinity;
+            foreach (var key in _lines.SelectMany(l => l.curve.keys))
+            {
+                //TODO: apply drawScale to preserve current?
+                maxX = Mathf.Max(maxX, key.time);
+                minX = Mathf.Min(minX, key.time);
+                maxY = Mathf.Max(maxY, key.value);
+                minY = Mathf.Min(minY, key.value);
+            }
+
+            var valueMin = new Vector2(minX, minY);
+            var valueMax = new Vector2(maxX, maxY);
+            var valueBounds = new Bounds((valueMax + valueMin) / 2, valueMax - valueMin);
+
+            var viewMin = _viewMatrixInv.MultiplyPoint2d(Vector2.zero);
+            var viewMax = _viewMatrixInv.MultiplyPoint2d(rectTransform.sizeDelta);
+            var viewBounds = new Bounds((viewMin + viewMax) / 2, viewMax - viewMin);
+
+            foreach (var line in _lines)
+                line.drawScale = DrawScaleOffset.FromViewBounds(valueBounds, viewBounds);
+
+            _cameraPosition = Vector2.zero;
+            UpdateViewMatrix();
+            SetVerticesDirty();
+        }
+
+        public void SetValueBounds(IStorableAnimationCurve storable, Vector2 min, Vector2 max)
+        {
+            CurveLine line;
+            if (!_storableToLineMap.TryGetValue(storable, out line))
+                return;
+
+            line.drawScale = DrawScaleOffset.FromValueBounds(new Bounds((max + min) / 2, max - min));
+            SetVerticesDirty();
+        }
+
+        public void SetScrubberPosition(float time)
+        {
+            foreach (var line in _lines)
+                _scrubberPositions[line] = time;
+            SetVerticesDirty();
+        }
+
+        public void SetScrubberPosition(IStorableAnimationCurve storable, float time)
+        {
+            CurveLine line;
+            if (!_storableToLineMap.TryGetValue(storable, out line))
+                return;
+
+            _scrubberPositions[line] = time;
+            SetVerticesDirty();
+        }
+
+        public void ToggleInHandleMode()
+        {
+            if (selectedPoint != null)
+            {
+                var line = selectedPoint.parent;
+                line.SetInHandleMode(selectedPoint, 1 - selectedPoint.inHandleMode);
+                line.SetCurveFromPoints();
+                SetVerticesDirty();
+            }
+        }
+
+        public void ToggleOutHandleMode()
+        {
+            if (selectedPoint != null)
+            {
+                var line = selectedPoint.parent;
+                line.SetOutHandleMode(selectedPoint, 1 - selectedPoint.outHandleMode);
+                line.SetCurveFromPoints();
+                SetVerticesDirty();
+            }
+        }
+
+        public void ToggleHandleMode()
+        {
+            if (selectedPoint != null)
+            {
+                var line = selectedPoint.parent;
+                line.SetHandleMode(selectedPoint, 1 - selectedPoint.handleMode);
+                line.SetCurveFromPoints();
+                SetVerticesDirty();
+            }
+        }
+
+        public void SetLinear()
+        {
+            if (selectedPoint == null)
+                return;
+
+            var line = selectedPoint.parent;
+            var idx = line.points.IndexOf(selectedPoint);
+            var curve = line.curve;
+            var key = curve[idx];
+
+            if (idx > 0)
+            {
+                var prev = curve[idx - 1];
+                prev.outTangent = key.inTangent = (key.value - prev.value) / (key.time - prev.time);
+                curve.MoveKey(idx - 1, prev);
+            }
+
+            if (idx < curve.length - 1)
+            {
+                var next = curve[idx + 1];
+                next.inTangent = key.outTangent = (next.value - key.value) / (next.time - key.time);
+                curve.MoveKey(idx + 1, next);
+            }
+
+            curve.MoveKey(idx, key);
+            line.SetPointsFromCurve();
+            SetVerticesDirty();
         }
 
         private bool ScreenToCanvasPosition(PointerEventData eventData, out Vector2 position)

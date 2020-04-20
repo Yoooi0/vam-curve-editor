@@ -67,7 +67,6 @@ namespace CurveEditor.UI
 
         public void PopulateScrubberPoints(VertexHelper vh, Matrix4x4 viewMatrix, Bounds viewBounds, float x)
         {
-            //TODO: clip Y
             var min = _drawScale.Reverse(viewBounds.min);
             var max = _drawScale.Reverse(viewBounds.max);
             if (x + 0.06f < min.x || x - 0.06f > max.x)
@@ -232,18 +231,21 @@ namespace CurveEditor.UI
             }
         }
 
+        //TODO: should be in point
         public void SetHandleMode(CurveEditorPoint point, int mode)
         {
             point.handleMode = mode;
             point.lineColor = mode == 0 ? _colors.handleLineColor : _colors.handleLineColorFree;
         }
 
+        //TODO: should be in point
         public void SetOutHandleMode(CurveEditorPoint point, int mode)
         {
             point.outHandleMode = mode;
             point.outHandleColor = mode == 0 ? _colors.outHandleColor : _colors.outHandleColorWeighted;
         }
 
+        //TODO: should be in point
         public void SetInHandleMode(CurveEditorPoint point, int mode)
         {
             point.inHandleMode = mode;

@@ -141,7 +141,7 @@ namespace CurveEditor
             {
                 var state = _animation["CurveEditorDemo"];
                 if (state != null)
-                    _curveEditor.SetScrubber(state.time % _curve1JSON.val[_curve1JSON.val.length - 1].time);
+                    _curveEditor.SetScrubberPosition(state.time % _curve1JSON.val[_curve1JSON.val.length - 1].time);
             }
         }
 

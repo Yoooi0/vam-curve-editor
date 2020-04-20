@@ -13,7 +13,6 @@ namespace CurveEditor.UI
         private readonly UICurveEditorCanvas _canvas;
         private readonly UICurveEditorColors _colors;
 
-        private readonly Dictionary<IStorableAnimationCurve, CurveLine> _storableToLineMap;
         private bool _readOnly;
 
         public bool readOnly
@@ -56,13 +55,18 @@ namespace CurveEditor.UI
             set { _canvas.allowViewZooming = value; }
         }
 
+        public bool allowViewScaling
+        {
+            get { return _canvas.allowViewScaling; }
+            set { _canvas.allowViewScaling = value; }
+        }
+
         public UICurveEditor(UIDynamic container, float width, float height, List<UIDynamicButton> buttons = null, UICurveEditorColors colors = null, bool readOnly = false)
         {
             var buttonContainerHeight = (buttons == null || buttons.Count == 0) ? 0 : 25;
 
             this.container = container;
 
-            _storableToLineMap = new Dictionary<IStorableAnimationCurve, CurveLine>();
             _colors = colors ?? new UICurveEditorColors();
 
             gameObject = new GameObject();
@@ -115,119 +119,17 @@ namespace CurveEditor.UI
             }
         }
 
-        public CurveLine AddCurve(IStorableAnimationCurve storable, UICurveLineColors colors = null, float thickness = 4)
-        {
-            var curveLine = _canvas.CreateCurve(storable, colors, thickness);
-            _storableToLineMap.Add(storable, curveLine);
-            return curveLine;
-        }
-
-        public void RemoveCurve(IStorableAnimationCurve storable)
-        {
-            if (!_storableToLineMap.ContainsKey(storable))
-                return;
-
-            var line = _storableToLineMap[storable];
-            _canvas.RemoveCurve(line);
-            _storableToLineMap.Remove(storable);
-        }
-
-        public void UpdateCurve(IStorableAnimationCurve storable)
-        {
-            CurveLine line;
-            if (!_storableToLineMap.TryGetValue(storable, out line))
-                return;
-
-            line.SetPointsFromCurve();
-            _canvas.SetVerticesDirty();
-        }
-
-        public void SetScrubber(float time)
-        {
-            foreach (var kv in _storableToLineMap)
-                _canvas.SetScrubberPosition(kv.Value, time);
-        }
-
-        public void SetScrubber(IStorableAnimationCurve storable, float time)
-        {
-            if (!_storableToLineMap.ContainsKey(storable))
-                return;
-
-            _canvas.SetScrubberPosition(_storableToLineMap[storable], time);
-        }
-
-        public void SetValueBounds(IStorableAnimationCurve storable, Vector2 min, Vector2 max)
-        {
-            CurveLine line;
-            if (!_storableToLineMap.TryGetValue(storable, out line))
-                return;
-
-            line.drawScale = DrawScaleOffset.FromValueBounds(new Bounds((max + min) / 2, max - min));
-            _canvas.SetVerticesDirty();
-        }
-
+        //TODO: meh...
+        public void AddCurve(IStorableAnimationCurve storable, UICurveLineColors colors = null, float thickness = 0.04f) => _canvas.CreateCurve(storable, colors, thickness);
+        public void RemoveCurve(IStorableAnimationCurve storable) => _canvas.RemoveCurve(storable);
+        public void UpdateCurve(IStorableAnimationCurve storable) => _canvas.UpdateCurve(storable);
+        public void SetScrubberPosition(float time) => _canvas.SetScrubberPosition(time);
+        public void SetScrubber(IStorableAnimationCurve storable, float time) => _canvas.SetScrubberPosition(storable, time);
+        public void SetValueBounds(IStorableAnimationCurve storable, Vector2 min, Vector2 max) => _canvas.SetValueBounds(storable, min, max);
         public void SetViewToFit() => _canvas.SetViewToFit();
-
-        public void ToggleHandleMode()
-        {
-            if (_canvas.selectedPoint != null)
-            {
-                var line = _canvas.selectedPoint.parent;
-                line.SetHandleMode(_canvas.selectedPoint, 1 - _canvas.selectedPoint.handleMode);
-                line.SetCurveFromPoints();
-                _canvas.SetVerticesDirty();
-            }
-        }
-
-        public void ToggleOutHandleMode()
-        {
-            if (_canvas.selectedPoint != null)
-            {
-                var line = _canvas.selectedPoint.parent;
-                line.SetOutHandleMode(_canvas.selectedPoint, 1 - _canvas.selectedPoint.outHandleMode);
-                line.SetCurveFromPoints();
-                _canvas.SetVerticesDirty();
-            }
-        }
-
-        public void ToggleInHandleMode()
-        {
-            if (_canvas.selectedPoint != null)
-            {
-                var line = _canvas.selectedPoint.parent;
-                line.SetInHandleMode(_canvas.selectedPoint, 1 - _canvas.selectedPoint.inHandleMode);
-                line.SetCurveFromPoints();
-                _canvas.SetVerticesDirty();
-            }
-        }
-
-        public void SetLinear()
-        {
-            if (_canvas.selectedPoint == null)
-                return;
-
-            var line = _canvas.selectedPoint.parent;
-            var idx = line.points.IndexOf(_canvas.selectedPoint);
-            var curve = line.curve;
-            var key = curve[idx];
-
-            if (idx > 0)
-            {
-                var prev = curve[idx - 1];
-                prev.outTangent = key.inTangent = (key.value - prev.value) / (key.time - prev.time);
-                curve.MoveKey(idx - 1, prev);
-            }
-
-            if (idx < curve.length - 1)
-            {
-                var next = curve[idx + 1];
-                next.inTangent = key.outTangent = (next.value - key.value) / (next.time - key.time);
-                curve.MoveKey(idx + 1, next);
-            }
-
-            curve.MoveKey(idx, key);
-            line.SetPointsFromCurve();
-            _canvas.SetVerticesDirty();
-        }
+        public void ToggleHandleMode() => _canvas.ToggleHandleMode();
+        public void ToggleOutHandleMode() => _canvas.ToggleOutHandleMode();
+        public void ToggleInHandleMode() => _canvas.ToggleInHandleMode();
+        public void SetLinear() => _canvas.SetLinear();
     }
 }
