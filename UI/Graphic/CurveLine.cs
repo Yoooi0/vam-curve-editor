@@ -73,7 +73,11 @@ namespace CurveEditor.UI
             if (x + 0.06f < min.x || x - 0.06f > max.x)
                 return;
 
-            vh.AddCircle(_drawScale.Apply(new Vector2(x, curve.Evaluate(x))), 0.03f, Color.white, viewMatrix);
+            var y = curve.Evaluate(x);
+            if (y + 0.06f < min.y || y - 0.06f > max.y)
+                return;
+
+            vh.AddCircle(_drawScale.Apply(new Vector2(x, y)), 0.03f, Color.white, viewMatrix);
         }
 
         public void SetCurveFromPoints()
