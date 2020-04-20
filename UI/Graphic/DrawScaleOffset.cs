@@ -12,7 +12,7 @@ namespace CurveEditor.UI
         {
             return new DrawScaleOffset()
             {
-                offset = new Vector2(valueBounds.min.x, valueBounds.min.y),
+                offset = -new Vector2(valueBounds.min.x / valueBounds.size.x, valueBounds.min.y / valueBounds.size.y),
                 ratio = new Vector2(1f / valueBounds.size.x, 1f / valueBounds.size.y)
             };
         }
@@ -21,8 +21,8 @@ namespace CurveEditor.UI
         {
             return new DrawScaleOffset()
             {
-                offset = new Vector2(valueBounds.min.x * viewBounds.size.x, valueBounds.min.y * viewBounds.size.y),
-                ratio = new Vector2(1f / valueBounds.size.x * viewBounds.size.x, 1f / valueBounds.size.y * viewBounds.size.y)
+                offset = -new Vector2(valueBounds.min.x * viewBounds.size.x / valueBounds.size.x, valueBounds.min.y * viewBounds.size.y / valueBounds.size.y),
+                ratio = new Vector2(viewBounds.size.x / valueBounds.size.x, viewBounds.size.y / valueBounds.size.y)
             };
         }
 
