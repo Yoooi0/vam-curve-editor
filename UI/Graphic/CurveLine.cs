@@ -108,7 +108,7 @@ namespace CurveEditor.UI
                     var prev = i > 0 ? points[i - 1] : null;
                     if (prev != null)
                     {
-                        var prevPosition = prev.position;
+                        var prevPosition = _drawScale.Reverse(prev.position);
                         var dx = position.x - prevPosition.x;
                         key.inWeight = Mathf.Clamp(Mathf.Abs(inPosition.x / dx), 0f, 1f);
                     }
@@ -126,7 +126,7 @@ namespace CurveEditor.UI
                     var next = i < points.Count - 1 ? points[i + 1] : null;
                     if (next != null)
                     {
-                        var nextPosition = next.position;
+                        var nextPosition = _drawScale.Reverse(next.position);
                         var dx = nextPosition.x - position.x;
                         key.outWeight = Mathf.Clamp(Mathf.Abs(outPosition.x / dx), 0f, 1f);
                     }
@@ -158,10 +158,10 @@ namespace CurveEditor.UI
                 point.inHandleMode = ((int)key.weightedMode & 1) > 0 ? 1 : 0;
                 point.outHandleMode = ((int)key.weightedMode & 2) > 0 ? 1 : 0;
 
-                var outHandleNormal = _drawScale.Apply(MathUtils.VectorFromAngle(Mathf.Atan(key.outTangent)).normalized);
+                var outHandleNormal = _drawScale.ratio * (MathUtils.VectorFromAngle(Mathf.Atan(key.outTangent)).normalized);
                 if (point.outHandleMode == 1 && i < curve.length - 1)
                 {
-                    var x = key.outWeight * (curve[i + 1].time - key.time);
+                    var x = key.outWeight * _drawScale.ApplyX(curve[i + 1].time - key.time);
                     var y = x * (outHandleNormal.y / outHandleNormal.x);
                     var length = Mathf.Sqrt(x * x + y * y);
                     point.outHandlePosition = outHandleNormal * length;
@@ -171,10 +171,10 @@ namespace CurveEditor.UI
                     point.outHandlePosition = outHandleNormal * point.outHandleLength;
                 }
 
-                var inHandleNormal = _drawScale.Apply(-MathUtils.VectorFromAngle(Mathf.Atan(key.inTangent)).normalized);
+                var inHandleNormal = _drawScale.ratio * (-MathUtils.VectorFromAngle(Mathf.Atan(key.inTangent)).normalized);
                 if (point.inHandleMode == 1 && i > 0)
                 {
-                    var x = key.inWeight * (key.time - curve[i - 1].time);
+                    var x = key.inWeight * _drawScale.ApplyX(key.time - curve[i - 1].time);
                     var y = x * (inHandleNormal.y / inHandleNormal.x);
                     var length = Mathf.Sqrt(x * x + y * y);
                     point.inHandlePosition = inHandleNormal * length;
