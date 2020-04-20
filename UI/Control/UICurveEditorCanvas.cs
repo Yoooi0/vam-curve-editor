@@ -1,4 +1,4 @@
-﻿using CurveEditor.Utils;
+using CurveEditor.Utils;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -140,6 +140,7 @@ namespace CurveEditor.UI
 
         private void UpdateViewMatrix()
             => _viewMatrix = Matrix4x4.TRS(_cameraPosition + _dragTranslation, Quaternion.identity, new Vector3(_zoom, _zoom, 1));
+
         public void CreateCurve(IStorableAnimationCurve storable, UICurveLineColors colors, float thickness)
         {
             var line = new CurveLine(storable, colors);
@@ -188,12 +189,14 @@ namespace CurveEditor.UI
             selectedPoint = point;
             SetVerticesDirty();
         }
+
         public void OnBeginDrag(PointerEventData eventData)
         {
-            Vector2 position;
-            if (!ScreenToCanvasPosition(eventData, out position))
+            Vector2 localPoint;
+            if (!ScreenPointToLocalPoint(eventData, out localPoint))
                 return;
 
+            var position = _viewMatrixInv.MultiplyPoint3x4(localPoint);
             if (selectedPoint?.OnBeginDrag(position) == true)
             {
                 selectedPoint.parent.SetCurveFromPoints();
@@ -211,16 +214,17 @@ namespace CurveEditor.UI
 
             if (allowViewDragging)
             {
-                _dragStartPosition = eventData.position;
+                _dragStartPosition = localPoint;
             }
         }
 
         public void OnDrag(PointerEventData eventData)
         {
-            Vector2 position;
-            if (!ScreenToCanvasPosition(eventData, out position))
+            Vector2 localPoint;
+            if (!ScreenPointToLocalPoint(eventData, out localPoint))
                 return;
 
+            var position = _viewMatrixInv.MultiplyPoint3x4(localPoint);
             if (selectedPoint?.OnDrag(position) == true)
             {
                 selectedPoint.parent.SetCurveFromPoints();
@@ -230,7 +234,7 @@ namespace CurveEditor.UI
 
             if (allowViewDragging)
             {
-                _dragTranslation = eventData.position - _dragStartPosition;
+                _dragTranslation = localPoint - _dragStartPosition;
                 UpdateViewMatrix();
                 SetVerticesDirty();
             }
@@ -238,10 +242,11 @@ namespace CurveEditor.UI
 
         public void OnEndDrag(PointerEventData eventData)
         {
-            Vector2 position;
-            if (!ScreenToCanvasPosition(eventData, out position))
+            Vector2 localPoint;
+            if (!ScreenPointToLocalPoint(eventData, out localPoint))
                 return;
 
+            var position = _viewMatrixInv.MultiplyPoint3x4(localPoint);
             if (selectedPoint?.OnEndDrag(position) == true)
             {
                 selectedPoint.parent.SetCurveFromPoints();
@@ -261,18 +266,19 @@ namespace CurveEditor.UI
             if (eventData.dragging)
                 return;
 
-            Vector2 point;
-            if (!ScreenToCanvasPosition(eventData, out point))
+            Vector2 localPoint;
+            if (!ScreenPointToLocalPoint(eventData, out localPoint))
                 return;
 
-            if (selectedPoint?.OnPointerClick(point) == true)
+            var position = _viewMatrixInv.MultiplyPoint3x4(localPoint);
+            if (selectedPoint?.OnPointerClick(position) == true)
             {
                 SetVerticesDirty();
                 return;
             }
 
-            var closest = _lines.SelectMany(l => l.points).OrderBy(p => Vector2.Distance(p.position, point)).FirstOrDefault();
-            if (closest?.OnPointerClick(point) == true)
+            var closest = _lines.SelectMany(l => l.points).OrderBy(p => Vector2.Distance(p.position, position)).FirstOrDefault();
+            if (closest?.OnPointerClick(position) == true)
             {
                 SetSelectedPoint(closest);
                 return;
@@ -280,9 +286,9 @@ namespace CurveEditor.UI
 
             if (eventData.clickCount > 0 && eventData.clickCount % 2 == 0)
             {
-                var closestLine = _lines.OrderBy(l => l.DistanceToPoint(point)).FirstOrDefault();
+                var closestLine = _lines.OrderBy(l => l.DistanceToPoint(position)).FirstOrDefault();
 
-                var created = closestLine.CreatePoint(point);
+                var created = closestLine.CreatePoint(position);
                 closestLine.SetCurveFromPoints();
                 SetVerticesDirty();
                 SetSelectedPoint(created);
@@ -409,7 +415,7 @@ namespace CurveEditor.UI
             SetVerticesDirty();
         }
 
-        private bool ScreenToCanvasPosition(PointerEventData eventData, out Vector2 position)
+        private bool ScreenPointToLocalPoint(PointerEventData eventData, out Vector2 position)
         {
             position = Vector2.zero;
 
@@ -417,7 +423,7 @@ namespace CurveEditor.UI
             if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(rectTransform, eventData.position, eventData.pressEventCamera, out localPosition))
                 return false;
 
-            position = _viewMatrixInv.MultiplyPoint3x4(localPosition);
+            position = localPosition;
             return true;
         }
     }
