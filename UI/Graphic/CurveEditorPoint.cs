@@ -83,9 +83,21 @@ namespace CurveEditor.UI
 
         public void PopulateMesh(VertexHelper vh, Matrix4x4 viewMatrix, Bounds viewBounds)
         {
-            //TODO: point radius
-            if (position.x < viewBounds.min.x || position.x > viewBounds.max.x || position.y < viewBounds.min.y || position.y > viewBounds.max.y)
-                return;
+            if (showHandles)
+            {
+                var center = position + (_inHandlePosition + _outHandlePosition) / 2;
+                var size = _outHandlePosition.normalized * (_outHandlePosition.magnitude + _handleRadius)
+                         - _inHandlePosition.normalized * (_inHandlePosition.magnitude + _handleRadius);
+
+                var bounds = new Bounds(center, new Vector2(Mathf.Abs(size.x), Mathf.Abs(size.y)));
+                if (!viewBounds.Intersects(bounds))
+                    return;
+            }
+            else
+            {
+                if (!viewBounds.Intersects(new Bounds(position, 2 * Vector2.one * _pointRadius)))
+                    return;
+            }
 
             if (showHandles)
             {
