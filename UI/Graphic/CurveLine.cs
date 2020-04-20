@@ -10,14 +10,14 @@ namespace CurveEditor.UI
         private readonly IStorableAnimationCurve _storable;
         private readonly UICurveLineColors _colors;
         private CurveEditorPoint _selectedPoint;
-        private Vector2 _scale = Vector2.one;
+        private Bounds _valuebounds = new Bounds(Vector2.one / 2f, Vector2.one);
 
         public readonly List<CurveEditorPoint> points;
 
-        public Vector2 scale 
+        public Bounds valueBounds
         {
-            get { return _scale; }
-            set { _scale = value; SetPointsFromCurve(); }
+            get { return _valuebounds; }
+            set { _valuebounds = value; SetPointsFromCurve(); }
         }
 
         public float thickness { get; set; } = 0.04f;
@@ -36,17 +36,16 @@ namespace CurveEditor.UI
 
         public void PopulateMesh(VertexHelper vh, Matrix4x4 viewMatrix, Bounds viewBounds)
         {
+            var scale = DrawScaleOffset.FromBounds(viewBounds, valueBounds);
             var curvePoints = new List<Vector2>();
-            var minT = viewBounds.min.x / scale.x;
-            var maxT = viewBounds.max.x / scale.x;
             for (var i = 0; i < evaluateCount; i++)
             {
                 //TODO: clip Y?
-                var t = Mathf.Lerp(minT, maxT, (float)i / (evaluateCount - 1));
-                if (t < minT || t > maxT)
+                var t = Mathf.Lerp(scale.valueBounds.min.x, scale.valueBounds.max.x, (float)i / (evaluateCount - 1));
+                if (t < scale.valueBounds.min.x || t > scale.valueBounds.max.x)
                     continue;
 
-                var point = new Vector2(t, curve.Evaluate(t)) * scale;
+                var point = new Vector2(t, curve.Evaluate(t)) * scale.ratio + scale.offset;
                 curvePoints.Add(point);
             }
 
@@ -54,10 +53,10 @@ namespace CurveEditor.UI
             foreach (var point in points)
             {
                 //TODO: point radius
-                if ((point.position.x + 0.25f) / scale.x < minT || (point.position.x - 0.25f) / scale.x > maxT)
+                if (point.position.x < valueBounds.min.x || point.position.x > valueBounds.max.x || point.position.y < valueBounds.min.y || point.position.y > valueBounds.max.y)
                     continue;
 
-                point.PopulateMesh(vh, viewMatrix, viewBounds);
+                point.PopulateMesh(vh, viewMatrix, scale);
             }
         }
 
@@ -71,9 +70,9 @@ namespace CurveEditor.UI
             {
                 var point = points[i];
 
-                var position = point.position / scale;
-                var outPosition = point.outHandlePosition / scale;
-                var inPosition = point.inHandlePosition / scale;
+                var position = point.position / valueBounds.size;
+                var outPosition = point.outHandlePosition / valueBounds.size;
+                var inPosition = point.inHandlePosition / valueBounds.size;
 
                 var key = new Keyframe(position.x, position.y);
                 key.weightedMode = (WeightedMode)(point.inHandleMode | point.outHandleMode << 1);
@@ -134,7 +133,8 @@ namespace CurveEditor.UI
             {
                 var point = points[i];
                 var key = curve[i];
-                point.position = new Vector2(key.time, key.value) * scale;
+
+                point.position = new Vector2(key.time, key.value);
 
                 if (key.inTangent != key.outTangent)
                     point.handleMode = 1;
@@ -142,7 +142,8 @@ namespace CurveEditor.UI
                 if (((int)key.weightedMode & 1) > 0) point.inHandleMode = 1;
                 if (((int)key.weightedMode & 2) > 0) point.outHandleMode = 1;
 
-                var outHandleNormal = (MathUtils.VectorFromAngle(Mathf.Atan(key.outTangent))).normalized * scale;
+                // TODO: Not sure
+                var outHandleNormal = (MathUtils.VectorFromAngle(Mathf.Atan(key.outTangent))).normalized;
                 if (point.outHandleMode == 1 && i < curve.length - 1)
                 {
                     var x = key.outWeight * (curve[i + 1].time - key.time);
@@ -155,7 +156,8 @@ namespace CurveEditor.UI
                     point.outHandlePosition = outHandleNormal * point.outHandleLength;
                 }
 
-                var inHandleNormal = -(MathUtils.VectorFromAngle(Mathf.Atan(key.inTangent))).normalized * scale;
+                // TODO: Not sure
+                var inHandleNormal = -(MathUtils.VectorFromAngle(Mathf.Atan(key.inTangent))).normalized;
                 if (point.inHandleMode == 1 && i > 0)
                 {
                     var x = key.inWeight * (key.time - curve[i - 1].time);

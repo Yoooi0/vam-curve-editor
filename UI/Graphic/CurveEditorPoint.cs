@@ -79,20 +79,21 @@ namespace CurveEditor.UI
             this.parent = parent;
         }
 
-        public void PopulateMesh(VertexHelper vh, Matrix4x4 viewMatrix, Bounds viewBounds)
+        public void PopulateMesh(VertexHelper vh, Matrix4x4 viewMatrix, DrawScaleOffset scale)
         {
+            var point = position * scale.ratio + scale.offset;
             if (showHandles)
             {
-                vh.AddLine(position, position + _outHandlePosition, _handleThickness, lineColor, viewMatrix);
-                vh.AddLine(position, position + _inHandlePosition, _handleThickness, lineColor, viewMatrix);
+                vh.AddLine(point, point + _outHandlePosition, _handleThickness, lineColor, viewMatrix);
+                vh.AddLine(point, point + _inHandlePosition, _handleThickness, lineColor, viewMatrix);
             }
 
-            vh.AddCircle(position, _pointRadius, pointColor, viewMatrix);
+            vh.AddCircle(point, _pointRadius, pointColor, viewMatrix);
 
             if (showHandles)
             {
-                vh.AddCircle(position + _outHandlePosition, _handleRadius, outHandleColor, viewMatrix);
-                vh.AddCircle(position + _inHandlePosition, _handleRadius, inHandleColor, viewMatrix);
+                vh.AddCircle(point + _outHandlePosition, _handleRadius, outHandleColor, viewMatrix);
+                vh.AddCircle(point + _inHandlePosition, _handleRadius, inHandleColor, viewMatrix);
             }
         }
 
@@ -107,7 +108,7 @@ namespace CurveEditor.UI
 
             if (!showHandles)
                 return false;
-           
+
             if (Vector2.Distance(point, position + _outHandlePosition) <= _handleRadius + _handleSkin)
             {
                 _isDraggingOutHandle = true;

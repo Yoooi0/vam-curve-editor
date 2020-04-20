@@ -55,7 +55,7 @@ namespace CurveEditor.UI
 
             if (_showGrid)
                 PopulateGrid(vh, viewBounds);
-            
+
             foreach (var line in _lines)
                 line.PopulateMesh(vh, _viewMatrix, viewBounds);
 
@@ -73,32 +73,35 @@ namespace CurveEditor.UI
             for (var v = Mathf.Floor(min.y); v <= Mathf.Ceil(max.y); v += 0.5f)
                 vh.AddLine(new Vector2(min.x, v), new Vector2(max.x, v), 0.01f, new Color(0.6f, 0.6f, 0.6f), _viewMatrix);
 
-            if(min.y < 0 && max.y > 0)
+            if (min.y < 0 && max.y > 0)
                 vh.AddLine(new Vector2(min.x, 0), new Vector2(max.x, 0), 0.04f, new Color(0.5f, 0.5f, 0.5f), _viewMatrix);
             if (min.x < 0 && max.x > 0)
                 vh.AddLine(new Vector2(0, min.y), new Vector2(0, max.y), 0.04f, new Color(0.5f, 0.5f, 0.5f), _viewMatrix);
         }
 
-        private void PopulateScrubbers(VertexHelper vh, Bounds bounds)
+        private void PopulateScrubbers(VertexHelper vh, Bounds viewBounds)
         {
-            var min = bounds.min;
-            var max = bounds.max;
-
             //TODO: colors
             foreach (var kv in _scrubberPositions)
             {
-                if (kv.Value < min.x || kv.Value > max.x)
+                // TODO: Refactor to calculate once per draw pass
+                var scale = DrawScaleOffset.FromBounds(viewBounds, kv.Key.valueBounds);
+
+                if (kv.Value < scale.valueBounds.min.x || kv.Value > scale.valueBounds.max.x)
                     continue;
 
-                vh.AddLine(new Vector2(kv.Value * kv.Key.scale.x, min.y), new Vector2(kv.Value * kv.Key.scale.x, max.y), 0.02f, Color.black, _viewMatrix);
+                vh.AddLine(new Vector2(kv.Value, scale.valueBounds.min.y) * scale.ratio + scale.offset, new Vector2(kv.Value, scale.valueBounds.max.y) * scale.ratio + scale.offset, 0.02f, Color.black, _viewMatrix);
             }
 
             foreach (var kv in _scrubberPositions)
             {
-                if (kv.Value + 0.05f < min.x || kv.Value - 0.05f > max.x)
+                // TODO: Refactor to calculate once per draw pass
+                var scale = DrawScaleOffset.FromBounds(viewBounds, kv.Key.valueBounds);
+
+                if (kv.Value + 0.05f < scale.valueBounds.min.x || kv.Value - 0.05f > scale.valueBounds.max.x)
                     continue;
 
-                vh.AddCircle(new Vector2(kv.Value, kv.Key.curve.Evaluate(kv.Value)) * kv.Key.scale, 0.05f, Color.white, _viewMatrix);
+                vh.AddCircle(new Vector2(kv.Value, kv.Key.curve.Evaluate(kv.Value)) * scale.ratio + scale.offset, 0.05f, Color.white, _viewMatrix);
             }
         }
 
@@ -120,38 +123,47 @@ namespace CurveEditor.UI
 
             if (allowViewZooming)
             {
+                // TODO: Do we want to use value bounds for this? Or use a value built from the viewBounds, valueBounds and scaleFactor?
                 if (Input.GetKeyDown(KeyCode.W))
                 {
                     foreach (var line in _lines)
-                        line.scale *= 2;
+                        line.valueBounds.Expand(2f);
                     SetVerticesDirty();
                 }
                 if (Input.GetKeyDown(KeyCode.S))
                 {
                     foreach (var line in _lines)
-                        line.scale /= 2;
+                        line.valueBounds.Expand(0.5f);
                     SetVerticesDirty();
                 }
             }
         }
 
         private void UpdateViewMatrix()
-        { 
+        {
             // TODO: readd zoom
             _viewMatrix = Matrix4x4.TRS(_cameraPosition + _dragTranslation, Quaternion.identity, new Vector3(100, 100, 1));
         }
 
         public void SetViewToFit()
         {
-            var min = Vector2.positiveInfinity;
-            var max = Vector2.negativeInfinity;
+            float minX = float.PositiveInfinity, minY = float.PositiveInfinity;
+            float maxX = float.NegativeInfinity, maxY = float.NegativeInfinity;
             foreach (var point in _lines.SelectMany(l => l.points))
             {
-                max = Vector2.Max(max, point.position);
-                min = Vector2.Min(min, point.position);
+                maxX = Mathf.Max(maxX, point.position.x);
+                minX = Mathf.Min(minX, point.position.x);
+                maxY = Mathf.Max(maxY, point.position.y);
+                minY = Mathf.Min(minY, point.position.y);
             }
-
-            //TODO:
+            var min = new Vector2(minX, minY);
+            var max = new Vector2(maxX, maxY);
+            var valueBounds = new Bounds((max - min) / 2, max - min);
+            foreach (var line in _lines)
+            {
+                line.valueBounds = valueBounds;
+            }
+            SetVerticesDirty();
         }
 
         public CurveLine CreateCurve(IStorableAnimationCurve storable, UICurveLineColors colors, float thickness)
@@ -174,7 +186,7 @@ namespace CurveEditor.UI
         {
             foreach (var line in _lines)
                 line.SetSelectedPoint(null);
-            
+
             if (point != null)
             {
                 _lines.Remove(point.parent);

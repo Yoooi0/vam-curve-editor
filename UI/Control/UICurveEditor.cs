@@ -110,7 +110,7 @@ namespace CurveEditor.UI
                 gridLayout.cellSize = new Vector2(width / buttons.Count, buttonContainerHeight);
                 gridLayout.childAlignment = TextAnchor.MiddleCenter;
 
-                foreach(var button in buttons)
+                foreach (var button in buttons)
                     button.gameObject.transform.SetParent(gridLayout.transform, false);
             }
         }
@@ -144,7 +144,7 @@ namespace CurveEditor.UI
 
         public void SetScrubber(float time)
         {
-            foreach(var kv in _storableToLineMap)
+            foreach (var kv in _storableToLineMap)
                 _canvas.SetScrubberPosition(kv.Value, time);
         }
 
@@ -156,13 +156,13 @@ namespace CurveEditor.UI
             _canvas.SetScrubberPosition(_storableToLineMap[storable], time);
         }
 
-        public void SetScale(IStorableAnimationCurve storable, Vector2 scale)
+        public void SetValueBounds(IStorableAnimationCurve storable, Vector2 min, Vector2 max)
         {
             CurveLine line;
             if (!_storableToLineMap.TryGetValue(storable, out line))
                 return;
 
-            line.scale = scale;
+            line.valueBounds = new Bounds((max - min) / 2, max - min);
             _canvas.SetVerticesDirty();
         }
 

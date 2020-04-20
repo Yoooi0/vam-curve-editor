@@ -19,13 +19,13 @@ namespace CurveEditor
         {
             try
             {
-                if(containingAtom != null)
+                if (containingAtom != null)
                     _animation = containingAtom.GetComponent<Animation>() ?? containingAtom.gameObject.AddComponent<Animation>();
 
                 _curveJSON = new JSONStorableAnimationCurve("Curve", CurveUpdated);
                 _curveJSON.val = AnimationCurve.EaseInOut(0, 0, 2, 1);
                 _curve2JSON = new JSONStorableAnimationCurve("Curve", CurveUpdated);
-                _curve2JSON.val = AnimationCurve.EaseInOut(0f, 1f, 1f, 0f);
+                _curve2JSON.val = AnimationCurve.EaseInOut(0f, 1f, 2f, 0f);
 
                 CreateUI();
             }
@@ -94,13 +94,13 @@ namespace CurveEditor
             var showScrubberToggle = CreateToggle(showScrubberStorable);
             showScrubberStorable.setCallbackFunction = v => _curveEditor.showScrubbers = v;
 
-            var scrubberSliderStorable = new JSONStorableFloat("Scrubber time", 0, 0, 1);
+            var scrubberSliderStorable = new JSONStorableFloat("Scrubber time", 0, 0, 2);
             var scrubberSlider = CreateSlider(scrubberSliderStorable);
 
             scrubberSliderStorable.setCallbackFunction = v =>
             {
                 _curveEditor.SetScrubber(_curveJSON, v);
-                _curveEditor.SetScrubber(_curve2JSON, 1 - v);
+                _curveEditor.SetScrubber(_curve2JSON, 2 - v);
             };
 
             var scaleSliderStorable = new JSONStorableFloat("Scale", 1, 0.5f, 2);
@@ -108,8 +108,8 @@ namespace CurveEditor
 
             scaleSliderStorable.setCallbackFunction = v =>
             {
-                _curveEditor.SetScale(_curveJSON, new Vector2(1, v));
-                _curveEditor.SetScale(_curve2JSON, new Vector2(v, 1));
+                _curveEditor.SetValueBounds(_curveJSON, Vector2.zero, new Vector2(1, v));
+                _curveEditor.SetValueBounds(_curve2JSON, Vector2.zero, new Vector2(v, 1));
             };
         }
 
