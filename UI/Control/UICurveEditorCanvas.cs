@@ -53,14 +53,30 @@ namespace CurveEditor.UI
             var max = _viewMatrixInv.MultiplyPoint2d(rectTransform.sizeDelta);
             var viewBounds = new Bounds((min + max) / 2, max - min);
 
+            foreach (var line in _lines)
+                line.UpdateDrawScale(viewBounds);
+
             if (_showGrid)
                 PopulateGrid(vh, viewBounds);
 
+            if (_showScrubbers)
+            {
+                foreach (var kv in _scrubberPositions)
+                {
+                    kv.Key.PopulateScrubberLine(vh, _viewMatrix, kv.Value);
+                }
+            }
+
             foreach (var line in _lines)
-                line.PopulateMesh(vh, _viewMatrix, viewBounds);
+                line.PopulateMesh(vh, _viewMatrix);
 
             if (_showScrubbers)
-                PopulateScrubbers(vh, viewBounds);
+            {
+                foreach (var kv in _scrubberPositions)
+                {
+                    kv.Key.PopulateScrubberPoints(vh, _viewMatrix, kv.Value);
+                }
+            }
         }
 
         private void PopulateGrid(VertexHelper vh, Bounds bounds)
@@ -77,32 +93,6 @@ namespace CurveEditor.UI
                 vh.AddLine(new Vector2(min.x, 0), new Vector2(max.x, 0), 0.04f, new Color(0.5f, 0.5f, 0.5f), _viewMatrix);
             if (min.x < 0 && max.x > 0)
                 vh.AddLine(new Vector2(0, min.y), new Vector2(0, max.y), 0.04f, new Color(0.5f, 0.5f, 0.5f), _viewMatrix);
-        }
-
-        private void PopulateScrubbers(VertexHelper vh, Bounds viewBounds)
-        {
-            //TODO: colors
-            foreach (var kv in _scrubberPositions)
-            {
-                // TODO: Refactor to calculate once per draw pass
-                var scale = DrawScaleOffset.FromBounds(viewBounds, kv.Key.valueBounds);
-
-                if (kv.Value < scale.valueBounds.min.x || kv.Value > scale.valueBounds.max.x)
-                    continue;
-
-                vh.AddLine(new Vector2(kv.Value, scale.valueBounds.min.y) * scale.ratio + scale.offset, new Vector2(kv.Value, scale.valueBounds.max.y) * scale.ratio + scale.offset, 0.02f, Color.black, _viewMatrix);
-            }
-
-            foreach (var kv in _scrubberPositions)
-            {
-                // TODO: Refactor to calculate once per draw pass
-                var scale = DrawScaleOffset.FromBounds(viewBounds, kv.Key.valueBounds);
-
-                if (kv.Value + 0.05f < scale.valueBounds.min.x || kv.Value - 0.05f > scale.valueBounds.max.x)
-                    continue;
-
-                vh.AddCircle(new Vector2(kv.Value, kv.Key.curve.Evaluate(kv.Value)) * scale.ratio + scale.offset, 0.05f, Color.white, _viewMatrix);
-            }
         }
 
         protected void Update()
@@ -127,13 +117,13 @@ namespace CurveEditor.UI
                 if (Input.GetKeyDown(KeyCode.W))
                 {
                     foreach (var line in _lines)
-                        line.valueBounds.Expand(2f);
+                        line.valueBounds = new Bounds(line.valueBounds.center, new Vector3(line.valueBounds.size.x * 2f, line.valueBounds.size.y, 0f));
                     SetVerticesDirty();
                 }
                 if (Input.GetKeyDown(KeyCode.S))
                 {
                     foreach (var line in _lines)
-                        line.valueBounds.Expand(0.5f);
+                        line.valueBounds = new Bounds(line.valueBounds.center, new Vector3(line.valueBounds.size.x * 0.5f, line.valueBounds.size.y, 0f));
                     SetVerticesDirty();
                 }
             }
@@ -281,18 +271,18 @@ namespace CurveEditor.UI
             if (eventData.dragging)
                 return;
 
-            Vector2 position;
-            if (!ScreenToCanvasPosition(eventData, out position))
+            Vector2 point;
+            if (!ScreenToCanvasPosition(eventData, out point))
                 return;
 
-            if (selectedPoint?.OnPointerClick(position) == true)
+            if (selectedPoint?.OnPointerClick(point) == true)
             {
                 SetVerticesDirty();
                 return;
             }
 
-            var closest = _lines.SelectMany(l => l.points).OrderBy(p => Vector2.Distance(p.position, position)).FirstOrDefault();
-            if (closest?.OnPointerClick(position) == true)
+            var closest = _lines.SelectMany(l => l.points).OrderBy(p => p.ViewDistance(point)).FirstOrDefault();
+            if (closest?.OnPointerClick(point) == true)
             {
                 SetSelectedPoint(closest);
                 return;
@@ -300,12 +290,12 @@ namespace CurveEditor.UI
 
             if (eventData.clickCount > 0 && eventData.clickCount % 2 == 0)
             {
-                var closestLine = _lines.OrderBy(l => Mathf.Abs(position.y - l.curve.Evaluate(position.x))).FirstOrDefault();
+                var closestLine = _lines.OrderBy(l => l.ViewDistance(point)).FirstOrDefault();
 
-                SetSelectedPoint(null);
-                closestLine.CreatePoint(position);
+                var created = closestLine.CreatePointFromView(point);
                 closestLine.SetCurveFromPoints();
                 SetVerticesDirty();
+                SetSelectedPoint(created);
                 return;
             }
 

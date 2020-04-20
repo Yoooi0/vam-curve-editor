@@ -13,7 +13,7 @@ namespace CurveEditor
 
         private UICurveEditor _curveEditor;
         private Animation _animation;
-        private JSONStorableAnimationCurve _curveJSON, _curve2JSON;
+        private JSONStorableAnimationCurve _curve1JSON, _curve2JSON;
 
         public override void Init()
         {
@@ -22,9 +22,9 @@ namespace CurveEditor
                 if (containingAtom != null)
                     _animation = containingAtom.GetComponent<Animation>() ?? containingAtom.gameObject.AddComponent<Animation>();
 
-                _curveJSON = new JSONStorableAnimationCurve("Curve", CurveUpdated);
-                _curveJSON.val = AnimationCurve.EaseInOut(0, 0, 2, 1);
-                _curve2JSON = new JSONStorableAnimationCurve("Curve", CurveUpdated);
+                _curve1JSON = new JSONStorableAnimationCurve("Curve 1", CurveUpdated);
+                _curve1JSON.val = AnimationCurve.EaseInOut(0, 0, 2, 1);
+                _curve2JSON = new JSONStorableAnimationCurve("Curve 2", CurveUpdated);
                 _curve2JSON.val = AnimationCurve.EaseInOut(0f, 1f, 2f, 0f);
 
                 CreateUI();
@@ -64,7 +64,7 @@ namespace CurveEditor
             curveEditorButtons[3].button.onClick.AddListener(() => _curveEditor.SetLinear());
 
             _curveEditor = new UICurveEditor(container, 520, container.height, buttons: curveEditorButtons);
-            _curveEditor.AddCurve(_curveJSON, UICurveLineColors.CreateFrom(new Color(0.388f, 0.698f, 0.890f)));
+            _curveEditor.AddCurve(_curve1JSON, UICurveLineColors.CreateFrom(new Color(0.388f, 0.698f, 0.890f)));
             _curveEditor.AddCurve(_curve2JSON, UICurveLineColors.CreateFrom(new Color(0.890f, 0.388f, 0.398f)));
             _curveEditor.SetViewToFit();
 
@@ -74,8 +74,10 @@ namespace CurveEditor
 
             resetButton.button.onClick.AddListener(() =>
             {
-                _curveJSON.SetValToDefault();
-                _curveEditor.UpdateCurve(_curveJSON);
+                _curve1JSON.SetValToDefault();
+                _curveEditor.UpdateCurve(_curve1JSON);
+                _curve2JSON.SetValToDefault();
+                _curveEditor.UpdateCurve(_curve2JSON);
             });
             playButton.button.onClick.AddListener(() =>
             {
@@ -99,25 +101,49 @@ namespace CurveEditor
 
             scrubberSliderStorable.setCallbackFunction = v =>
             {
-                _curveEditor.SetScrubber(_curveJSON, v);
+                var state = _animation["CurveEditorDemo"];
+                if (state != null)
+                {
+                    state.time = v;
+                }
+                _curveEditor.SetScrubber(_curve1JSON, v);
                 _curveEditor.SetScrubber(_curve2JSON, 2 - v);
             };
 
-            var scaleSliderStorable = new JSONStorableFloat("Scale", 1, 0.5f, 2);
-            var scaleSlider = CreateSlider(scaleSliderStorable);
+            var timeScaleSliderStorable = new JSONStorableFloat("Time Scale", 1, 0.5f, 2);
+            var valueScaleSliderStorable = new JSONStorableFloat("Value Scale", 1, 0.5f, 2);
 
-            scaleSliderStorable.setCallbackFunction = v =>
+            var timeScaleSlider = CreateSlider(timeScaleSliderStorable);
+
+            timeScaleSliderStorable.setCallbackFunction = v =>
             {
-                _curveEditor.SetValueBounds(_curveJSON, Vector2.zero, new Vector2(1, v));
-                _curveEditor.SetValueBounds(_curve2JSON, Vector2.zero, new Vector2(v, 1));
+                _curveEditor.SetValueBounds(_curve1JSON, Vector2.zero, new Vector2(2 * v, valueScaleSliderStorable.val));
+                _curveEditor.SetValueBounds(_curve2JSON, Vector2.zero, new Vector2(2 * v, valueScaleSliderStorable.val));
+            };
+
+            var valueScaleSlider = CreateSlider(valueScaleSliderStorable);
+
+            valueScaleSliderStorable.setCallbackFunction = v =>
+            {
+                _curveEditor.SetValueBounds(_curve1JSON, Vector2.zero, new Vector2(2 * timeScaleSliderStorable.val, v));
+                _curveEditor.SetValueBounds(_curve2JSON, Vector2.zero, new Vector2(2 * timeScaleSliderStorable.val, v));
             };
         }
 
-        protected void Update() { }
+        protected void Update()
+        {
+            if (_animation == null || _curve1JSON == null || _curveEditor == null) return;
+            if (_animation.isPlaying)
+            {
+                var state = _animation["CurveEditorDemo"];
+                if (state != null)
+                    _curveEditor.SetScrubber(state.time % _curve1JSON.val[_curve1JSON.val.length - 1].time);
+            }
+        }
+
         protected void OnDestroy()
         {
-            if (_animation != null)
-                GameObject.Destroy(_animation);
+            // NOTE: We don't destroy the animation because reloading plugins will create before the previous one is destroyed.
             RemoveSpacer(_curveEditor.container);
         }
 
@@ -135,17 +161,16 @@ namespace CurveEditor
             };
             clip.SetCurve("", typeof(Transform), "localPosition.x", curve);
             _animation.AddClip(clip, "CurveEditorDemo");
-            if (playing)
-            {
-                _animation["CurveEditorDemo"].time = time;
-                _animation.Play("CurveEditorDemo");
-            }
+            _animation["CurveEditorDemo"].time = time;
+            _animation.Play("CurveEditorDemo");
+            if (!playing)
+                _animation.Stop("CurveEditorDemo");
         }
 
         public override JSONClass GetJSON(bool includePhysical = true, bool includeAppearance = true, bool forceStore = false)
         {
             var jc = base.GetJSON(includePhysical, includeAppearance, forceStore);
-            if (_curveJSON.StoreJSON(jc, includePhysical, includeAppearance, forceStore)) needsStore = true;
+            if (_curve1JSON.StoreJSON(jc, includePhysical, includeAppearance, forceStore)) needsStore = true;
             return jc;
         }
 
@@ -153,8 +178,8 @@ namespace CurveEditor
         {
             base.RestoreFromJSON(jc, restorePhysical, restoreAppearance, presetAtoms, setMissingToDefault);
 
-            _curveJSON.RestoreFromJSON(jc, restorePhysical, restoreAppearance, setMissingToDefault);
-            _curveEditor.UpdateCurve(_curveJSON);
+            _curve1JSON.RestoreFromJSON(jc, restorePhysical, restoreAppearance, setMissingToDefault);
+            _curveEditor.UpdateCurve(_curve1JSON);
         }
 
         public override void LateRestoreFromJSON(JSONClass jc, bool restorePhysical = true, bool restoreAppearance = true, bool setMissingToDefault = true)

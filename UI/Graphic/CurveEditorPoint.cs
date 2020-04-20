@@ -1,3 +1,4 @@
+using System;
 using CurveEditor.Utils;
 using UnityEngine;
 using UnityEngine.UI;
@@ -24,12 +25,15 @@ namespace CurveEditor.UI
         private Vector2 _outHandlePosition = Vector2.right * 0.5f;
         private Vector2 _inHandlePosition = Vector2.left * 0.5f;
 
+        private DrawScaleOffset _drawScale;
+
         public CurveLine parent { get; private set; } = null;
         public bool showHandles { get; set; } = false;
         public Color pointColor { get; set; } = new Color(1, 1, 1);
         public Color lineColor { get; set; } = new Color(0.5f, 0.5f, 0.5f);
         public Color inHandleColor { get; set; } = new Color(0, 0, 0);
         public Color outHandleColor { get; set; } = new Color(0, 0, 0);
+
         public Vector2 position { get; set; } = Vector2.zero;
 
         public int handleMode
@@ -79,9 +83,24 @@ namespace CurveEditor.UI
             this.parent = parent;
         }
 
-        public void PopulateMesh(VertexHelper vh, Matrix4x4 viewMatrix, DrawScaleOffset scale)
+        public void UpdateDrawScale(DrawScaleOffset drawScale)
         {
-            var point = position * scale.ratio + scale.offset;
+            _drawScale = drawScale;
+        }
+
+        public float ViewDistance(Vector2 point)
+        {
+            return Vector2.Distance(_drawScale.Apply(position), point);
+        }
+
+        public void PopulateMesh(VertexHelper vh, Matrix4x4 viewMatrix)
+        {
+            var point = _drawScale.Apply(position);
+
+            //TODO: point radius
+            if (point.x < _drawScale.viewBounds.min.x || point.x > _drawScale.viewBounds.max.x || point.y < _drawScale.viewBounds.min.y || point.y > _drawScale.viewBounds.max.y)
+                return;
+
             if (showHandles)
             {
                 vh.AddLine(point, point + _outHandlePosition, _handleThickness, lineColor, viewMatrix);
@@ -97,28 +116,30 @@ namespace CurveEditor.UI
             }
         }
 
-        public bool OnBeginDrag(Vector2 point)
+        public bool OnBeginDrag(Vector2 viewPoint)
         {
-            if (Vector2.Distance(point, position) <= _pointRadius + _pointSkin)
+            var viewPosition = _drawScale.Apply(position);
+
+            if (Vector2.Distance(viewPoint, viewPosition) <= _pointRadius + _pointSkin)
             {
                 _isDraggingPoint = true;
-                position = point;
+                position = viewPoint;
                 return true;
             }
 
             if (!showHandles)
                 return false;
 
-            if (Vector2.Distance(point, position + _outHandlePosition) <= _handleRadius + _handleSkin)
+            if (Vector3.Distance(viewPoint, viewPosition + _outHandlePosition) <= _handleRadius + _handleSkin)
             {
                 _isDraggingOutHandle = true;
-                SetOutHandlePosition(point - position);
+                SetOutHandlePosition(_drawScale.Reverse(viewPoint) - position);
                 return true;
             }
-            else if (Vector2.Distance(point, position + _inHandlePosition) <= _handleRadius + _handleSkin)
+            else if (Vector2.Distance(viewPoint, viewPosition + _inHandlePosition) <= _handleRadius + _handleSkin)
             {
                 _isDraggingInHandle = true;
-                SetInHandlePosition(point - position);
+                SetInHandlePosition(_drawScale.Reverse(viewPoint) - position);
                 return true;
             }
 
@@ -128,6 +149,8 @@ namespace CurveEditor.UI
 
         public bool OnDrag(Vector2 point)
         {
+            point = _drawScale.Reverse(point);
+
             if (!_isDraggingPoint && !_isDraggingOutHandle && !_isDraggingInHandle)
                 return false;
 
@@ -138,7 +161,7 @@ namespace CurveEditor.UI
             return true;
         }
 
-        public bool OnEndDrag(Vector2 point)
+        public bool OnEndDrag(Vector2 _)
         {
             if (!_isDraggingPoint && !_isDraggingOutHandle && !_isDraggingInHandle)
                 return false;
@@ -152,6 +175,8 @@ namespace CurveEditor.UI
 
         public bool OnPointerClick(Vector2 point)
         {
+            point = _drawScale.Reverse(point);
+
             if (Vector2.Distance(point, position) <= _pointRadius + _pointSkin) return true;
 
             if (!showHandles) return false;
