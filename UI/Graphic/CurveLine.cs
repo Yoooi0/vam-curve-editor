@@ -154,12 +154,9 @@ namespace CurveEditor.UI
                 var key = curve[i];
 
                 point.position = _drawScale.Apply(new Vector2(key.time, key.value));
-
-                if (key.inTangent != key.outTangent)
-                    point.handleMode = 1;
-
-                if (((int)key.weightedMode & 1) > 0) point.inHandleMode = 1;
-                if (((int)key.weightedMode & 2) > 0) point.outHandleMode = 1;
+                point.handleMode = key.inTangent != key.outTangent ? 1 : 0;
+                point.inHandleMode = ((int)key.weightedMode & 1) > 0 ? 1 : 0;
+                point.outHandleMode = ((int)key.weightedMode & 2) > 0 ? 1 : 0;
 
                 var outHandleNormal = _drawScale.Apply(MathUtils.VectorFromAngle(Mathf.Atan(key.outTangent)).normalized);
                 if (point.outHandleMode == 1 && i < curve.length - 1)
@@ -186,21 +183,13 @@ namespace CurveEditor.UI
                 {
                     point.inHandlePosition = inHandleNormal * point.inHandleLength;
                 }
-
-                SetHandleMode(point, point.handleMode);
-                SetOutHandleMode(point, point.outHandleMode);
-                SetInHandleMode(point, point.inHandleMode);
             }
         }
 
         public CurveEditorPoint CreatePoint(Vector2 position = new Vector2())
         {
-            var point = new CurveEditorPoint(this)
+            var point = new CurveEditorPoint(this, _colors)
             {
-                pointColor = _colors.pointColor,
-                inHandleColor = _colors.inHandleColor,
-                outHandleColor = _colors.outHandleColor,
-                lineColor = _colors.handleLineColor,
                 position = position
             };
 
@@ -218,38 +207,15 @@ namespace CurveEditor.UI
         {
             if (_selectedPoint != null)
             {
-                _selectedPoint.pointColor = _colors.pointColor;
                 _selectedPoint.showHandles = false;
                 _selectedPoint = null;
             }
 
             if (point != null)
             {
-                point.pointColor = _colors.selectedPointColor;
                 point.showHandles = true;
                 _selectedPoint = point;
             }
-        }
-
-        //TODO: should be in point
-        public void SetHandleMode(CurveEditorPoint point, int mode)
-        {
-            point.handleMode = mode;
-            point.lineColor = mode == 0 ? _colors.handleLineColor : _colors.handleLineColorFree;
-        }
-
-        //TODO: should be in point
-        public void SetOutHandleMode(CurveEditorPoint point, int mode)
-        {
-            point.outHandleMode = mode;
-            point.outHandleColor = mode == 0 ? _colors.outHandleColor : _colors.outHandleColorWeighted;
-        }
-
-        //TODO: should be in point
-        public void SetInHandleMode(CurveEditorPoint point, int mode)
-        {
-            point.inHandleMode = mode;
-            point.inHandleColor = mode == 0 ? _colors.inHandleColor : _colors.inHandleColorWeighted;
         }
 
         public float DistanceToPoint(Vector2 point)

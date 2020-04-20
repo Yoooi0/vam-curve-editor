@@ -354,9 +354,8 @@ namespace CurveEditor.UI
         {
             if (selectedPoint != null)
             {
-                var line = selectedPoint.parent;
-                line.SetInHandleMode(selectedPoint, 1 - selectedPoint.inHandleMode);
-                line.SetCurveFromPoints();
+                selectedPoint.inHandleMode = 1 - selectedPoint.inHandleMode;
+                selectedPoint.parent.SetCurveFromPoints();
                 SetVerticesDirty();
             }
         }
@@ -365,9 +364,8 @@ namespace CurveEditor.UI
         {
             if (selectedPoint != null)
             {
-                var line = selectedPoint.parent;
-                line.SetOutHandleMode(selectedPoint, 1 - selectedPoint.outHandleMode);
-                line.SetCurveFromPoints();
+                selectedPoint.outHandleMode = 1 - selectedPoint.outHandleMode;
+                selectedPoint.parent.SetCurveFromPoints();
                 SetVerticesDirty();
             }
         }
@@ -376,9 +374,8 @@ namespace CurveEditor.UI
         {
             if (selectedPoint != null)
             {
-                var line = selectedPoint.parent;
-                line.SetHandleMode(selectedPoint, 1 - selectedPoint.handleMode);
-                line.SetCurveFromPoints();
+                selectedPoint.handleMode = 1 - selectedPoint.handleMode;
+                selectedPoint.parent.SetCurveFromPoints();
                 SetVerticesDirty();
             }
         }

@@ -7,6 +7,8 @@ namespace CurveEditor.UI
 {
     public class CurveEditorPoint
     {
+        private readonly UICurveLineColors _colors; //TODO: just point colors
+
         private float _pointRadius = 0.08f;
         private float _pointSkin = 0.05f;
         private float _handleRadius = 0.07f;
@@ -18,38 +20,47 @@ namespace CurveEditor.UI
         private bool _isDraggingPoint = false;
         private bool _isDraggingOutHandle = false;
         private bool _isDraggingInHandle = false;
+        private bool _showHandles = false;
         private int _handleMode = 0;    // 0 = both, 1 = free
         private int _inHandleMode = 0;  // 0 = constant, 1 = weighted
         private int _outHandleMode = 0; // 0 = constant, 1 = weighted
 
         private Vector2 _outHandlePosition = Vector2.right * 0.5f;
         private Vector2 _inHandlePosition = Vector2.left * 0.5f;
+        private Color pointColor = new Color(1, 1, 1);
+        private Color lineColor = new Color(0.5f, 0.5f, 0.5f);
+        private Color inHandleColor = new Color(0, 0, 0);
+        private Color outHandleColor = new Color(0, 0, 0);
 
         public CurveLine parent { get; private set; } = null;
-        public bool showHandles { get; set; } = false;
-        public Color pointColor { get; set; } = new Color(1, 1, 1);
-        public Color lineColor { get; set; } = new Color(0.5f, 0.5f, 0.5f);
-        public Color inHandleColor { get; set; } = new Color(0, 0, 0);
-        public Color outHandleColor { get; set; } = new Color(0, 0, 0);
 
         public Vector2 position { get; set; } = Vector2.zero;
+        public bool showHandles
+        {
+            get { return _showHandles; }
+            set
+            {
+                _showHandles = value;
+                pointColor = _showHandles ? _colors.selectedPointColor : _colors.pointColor;
+            }
+        }
 
         public int handleMode
         {
             get { return _handleMode; }
-            set { _handleMode = value; SetOutHandlePosition(_outHandlePosition); }
+            set { SetHandleMode(value); }
         }
 
         public int inHandleMode
         {
             get { return _inHandleMode; }
-            set { _inHandleMode = value; SetInHandlePosition(_inHandlePosition); }
+            set { SetInHandleMode(value); }
         }
 
         public int outHandleMode
         {
             get { return _outHandleMode; }
-            set { _outHandleMode = value; SetOutHandlePosition(_outHandlePosition); }
+            set { SetOutHandleMode(value); }
         }
 
         public float outHandleLength
@@ -76,9 +87,15 @@ namespace CurveEditor.UI
             set { SetInHandlePosition(value); }
         }
 
-        public CurveEditorPoint(CurveLine parent)
+        public CurveEditorPoint(CurveLine parent, UICurveLineColors colors = null)
         {
             this.parent = parent;
+            _colors = colors ?? new UICurveLineColors();
+
+            pointColor = _colors.pointColor;
+            inHandleColor = _colors.inHandleColor;
+            outHandleColor = _colors.outHandleColor;
+            lineColor = _colors.handleLineColor;
         }
 
         public void PopulateMesh(VertexHelper vh, Matrix4x4 viewMatrix, Bounds viewBounds)
@@ -178,7 +195,29 @@ namespace CurveEditor.UI
             return !IsPositionOutsideShell(point);
         }
 
-        public void SetOutHandlePosition(Vector2 handlePosition)
+        private void SetHandleMode(int mode)
+        {
+            _handleMode = mode;
+            lineColor = mode == 0 ? _colors.handleLineColor : _colors.handleLineColorFree;
+            SetOutHandlePosition(_outHandlePosition);
+        }
+
+        private void SetOutHandleMode(int mode)
+        {
+            _outHandleMode = mode;
+            outHandleColor = mode == 0 ? _colors.outHandleColor : _colors.outHandleColorWeighted;
+            SetOutHandlePosition(_outHandlePosition);
+        }
+
+        private void SetInHandleMode(int mode)
+        {
+            _inHandleMode = mode;
+            inHandleColor = mode == 0 ? _colors.inHandleColor : _colors.inHandleColorWeighted;
+            SetInHandlePosition(_inHandlePosition);
+        }
+
+
+        private void SetOutHandlePosition(Vector2 handlePosition)
         {
             if (handlePosition.x < 0)
                 _outHandlePosition = Vector2.up * _outHandleLength;
@@ -194,7 +233,7 @@ namespace CurveEditor.UI
             }
         }
 
-        public void SetInHandlePosition(Vector2 handlePosition)
+        private void SetInHandlePosition(Vector2 handlePosition)
         {
             if (handlePosition.x > 0)
                 _inHandlePosition = Vector2.down * _inHandleLength;
