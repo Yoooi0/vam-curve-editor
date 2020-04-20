@@ -152,7 +152,8 @@ namespace CurveEditor.UI
             foreach (var line in _lines)
                 line.drawScale = DrawScaleOffset.FromViewBounds(valueBounds, viewBounds);
 
-            //TODO: reset camera
+            _cameraPosition = Vector2.zero;
+            UpdateViewMatrix();
             SetVerticesDirty();
         }
 
