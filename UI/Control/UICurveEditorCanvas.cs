@@ -1,4 +1,4 @@
-using CurveEditor.Utils;
+﻿using CurveEditor.Utils;
 using Leap;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,12 +21,14 @@ namespace CurveEditor.UI
         private Matrix4x4 _viewMatrix = Matrix4x4.identity;
         private Color _gridColor = new Color(0.6f, 0.6f, 0.6f);
         private Color _girdAxisColor = new Color(0.5f, 0.5f, 0.5f);
+        private float _zoom = 100;
 
         private Matrix4x4 _viewMatrixInv => _viewMatrix.inverse;
 
         public CurveEditorPoint selectedPoint { get; private set; } = null;
         public bool allowViewDragging { get; set; } = true;
         public bool allowViewZooming { get; set; } = true;
+        public bool allowViewScaling { get; set; } = true;
         public bool allowKeyboardShortcuts { get; set; } = true;
         public bool readOnly { get; set; } = false;
 
@@ -104,9 +106,8 @@ namespace CurveEditor.UI
                 }
             }
 
-            if (allowViewZooming)
+            if (allowViewScaling)
             {
-                // TODO: Do we want to use value bounds for this? Or use a value built from the viewBounds, valueBounds and scaleFactor?
                 if (Input.GetKeyDown(KeyCode.W))
                 {
                     foreach (var line in _lines)
@@ -120,13 +121,26 @@ namespace CurveEditor.UI
                     SetVerticesDirty();
                 }
             }
+
+            if (allowViewZooming)
+            {
+                if (Input.GetKeyDown(KeyCode.Q))
+                {
+                    _zoom += 10f;
+                    UpdateViewMatrix();
+                    SetVerticesDirty();
+                }
+                if (Input.GetKeyDown(KeyCode.A))
+                {
+                    _zoom -= 10f;
+                    UpdateViewMatrix();
+                    SetVerticesDirty();
+                }
+            }
         }
 
         private void UpdateViewMatrix()
-        {
-            // TODO: readd zoom
-            _viewMatrix = Matrix4x4.TRS(_cameraPosition + _dragTranslation, Quaternion.identity, new Vector3(100, 100, 1));
-        }
+            => _viewMatrix = Matrix4x4.TRS(_cameraPosition + _dragTranslation, Quaternion.identity, new Vector3(_zoom, _zoom, 1));
 
         public void SetViewToFit()
         {
