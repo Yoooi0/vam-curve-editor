@@ -300,6 +300,7 @@ namespace CurveEditor.UI
 
         public void SetViewToFit()
         {
+            // Ensure view matrix is up to date
             UpdateViewMatrix();
 
             float minX = float.PositiveInfinity, minY = float.PositiveInfinity;
@@ -328,6 +329,9 @@ namespace CurveEditor.UI
 
         public void SetValueBounds(IStorableAnimationCurve storable, Vector2 valuMin, Vector2 valueMax, bool normalizeToView)
         {
+            // Ensure view matrix is up to date
+            UpdateViewMatrix();
+
             CurveLine line;
             if (!_storableToLineMap.TryGetValue(storable, out line))
                 return;
