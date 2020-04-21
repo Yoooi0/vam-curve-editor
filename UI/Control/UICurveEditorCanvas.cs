@@ -1,4 +1,5 @@
 ﻿using CurveEditor.Utils;
+using Leap;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -55,10 +56,7 @@ namespace CurveEditor.UI
             vh.Clear();
 
             //TODO: prescale viewBounds for each line?
-            var min = _viewMatrixInv.MultiplyPoint2d(Vector2.zero);
-            var max = _viewMatrixInv.MultiplyPoint2d(rectTransform.sizeDelta);
-            var viewBounds = new Bounds((min + max) / 2, max - min);
-
+            var viewBounds = GetViewBounds();
             if (_showGrid)
                 PopulateGrid(vh, viewBounds);
 
@@ -110,13 +108,15 @@ namespace CurveEditor.UI
                 if (Input.GetKeyDown(KeyCode.W))
                 {
                     foreach (var line in _lines)
-                        line.drawScale = DrawScaleOffset.Resize(line.drawScale, 2f);
+                        line.drawScale.Resize(2f);
+
                     SetVerticesDirty();
                 }
                 if (Input.GetKeyDown(KeyCode.S))
                 {
                     foreach (var line in _lines)
-                        line.drawScale = DrawScaleOffset.Resize(line.drawScale, 0.5f);
+                        line.drawScale.Resize(0.5f);
+
                     SetVerticesDirty();
                 }
             }
@@ -316,26 +316,28 @@ namespace CurveEditor.UI
             var valueMin = new Vector2(minX, minY);
             var valueMax = new Vector2(maxX, maxY);
             var valueBounds = new Bounds((valueMax + valueMin) / 2, valueMax - valueMin);
-
-            var viewMin = _viewMatrixInv.MultiplyPoint2d(Vector2.zero);
-            var viewMax = _viewMatrixInv.MultiplyPoint2d(rectTransform.sizeDelta);
-            var viewBounds = new Bounds((viewMin + viewMax) / 2, viewMax - viewMin);
+            var viewBounds = GetViewBounds();
 
             foreach (var line in _lines)
-                line.drawScale = DrawScaleOffset.FromViewBounds(valueBounds, viewBounds);
+                line.drawScale = DrawScaleOffset.FromViewNormalizedValueBounds(valueBounds, viewBounds);
 
             _cameraPosition = Vector2.zero;
             UpdateViewMatrix();
             SetVerticesDirty();
         }
 
-        public void SetValueBounds(IStorableAnimationCurve storable, Vector2 min, Vector2 max)
+        public void SetValueBounds(IStorableAnimationCurve storable, Vector2 valuMin, Vector2 valueMax, bool normalizeToView)
         {
             CurveLine line;
             if (!_storableToLineMap.TryGetValue(storable, out line))
                 return;
 
-            line.drawScale = DrawScaleOffset.FromValueBounds(new Bounds((max + min) / 2, max - min));
+            var valueBounds = new Bounds((valueMax + valuMin) / 2, valueMax - valuMin);
+            if (normalizeToView)
+                line.drawScale = DrawScaleOffset.FromViewNormalizedValueBounds(valueBounds, GetViewBounds());
+            else
+                line.drawScale = DrawScaleOffset.FromValueBounds(valueBounds);
+
             SetVerticesDirty();
         }
 
@@ -425,6 +427,13 @@ namespace CurveEditor.UI
 
             position = localPosition;
             return true;
+        }
+
+        private Bounds GetViewBounds()
+        {
+            var viewMin = _viewMatrixInv.MultiplyPoint2d(Vector2.zero);
+            var viewMax = _viewMatrixInv.MultiplyPoint2d(rectTransform.sizeDelta);
+            return new Bounds((viewMin + viewMax) / 2, viewMax - viewMin);
         }
     }
 }

@@ -125,7 +125,7 @@ namespace CurveEditor.UI
         public void UpdateCurve(IStorableAnimationCurve storable) => _canvas.UpdateCurve(storable);
         public void SetScrubberPosition(float time) => _canvas.SetScrubberPosition(time);
         public void SetScrubber(IStorableAnimationCurve storable, float time) => _canvas.SetScrubberPosition(storable, time);
-        public void SetValueBounds(IStorableAnimationCurve storable, Vector2 min, Vector2 max) => _canvas.SetValueBounds(storable, min, max);
+        public void SetValueBounds(IStorableAnimationCurve storable, Vector2 min, Vector2 max, bool normalizeToView = true) => _canvas.SetValueBounds(storable, min, max, normalizeToView);
         public void SetViewToFit() => _canvas.SetViewToFit();
         public void ToggleHandleMode() => _canvas.ToggleHandleMode();
         public void ToggleOutHandleMode() => _canvas.ToggleOutHandleMode();

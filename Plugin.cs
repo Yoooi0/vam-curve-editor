@@ -23,9 +23,9 @@ namespace CurveEditor
                     _animation = containingAtom.GetComponent<Animation>() ?? containingAtom.gameObject.AddComponent<Animation>();
 
                 _curve1JSON = new JSONStorableAnimationCurve("Curve 1", CurveUpdated);
-                _curve1JSON.val = AnimationCurve.Linear(0, 0, 2, -1);
+                _curve1JSON.val = AnimationCurve.EaseInOut(0, 0, 2, 10);
                 _curve2JSON = new JSONStorableAnimationCurve("Curve 2", CurveUpdated);
-                _curve2JSON.val = AnimationCurve.EaseInOut(0f, 1f, 2f, 0f);
+                _curve2JSON.val = AnimationCurve.EaseInOut(0, 1, 2, 0);
 
                 CreateUI();
             }
@@ -65,7 +65,9 @@ namespace CurveEditor
 
             _curveEditor = new UICurveEditor(container, 520, container.height, buttons: curveEditorButtons);
             _curveEditor.AddCurve(_curve1JSON, UICurveLineColors.CreateFrom(new Color(0.388f, 0.698f, 0.890f)));
+            _curveEditor.SetValueBounds(_curve1JSON, Vector2.zero, new Vector2(2, 10f));
             _curveEditor.AddCurve(_curve2JSON, UICurveLineColors.CreateFrom(new Color(0.890f, 0.388f, 0.398f)));
+            _curveEditor.SetValueBounds(_curve2JSON, Vector2.zero, new Vector2(2, 1f));
 
             var resetButton = CreateButton("Reset");
             var playButton = CreateButton("Play");
@@ -114,6 +116,9 @@ namespace CurveEditor
                 _curveEditor.SetScrubber(_curve2JSON, 2 - v);
             };
 
+            var normalizeScaleStorable = new JSONStorableBool("Normalize to view", false);
+            var normalizeScaleToggle = CreateToggle(normalizeScaleStorable);
+
             var timeScaleSliderStorable = new JSONStorableFloat("Time Scale", 1, 0.5f, 2);
             var valueScaleSliderStorable = new JSONStorableFloat("Value Scale", 1, 0.5f, 2);
 
@@ -121,16 +126,16 @@ namespace CurveEditor
 
             timeScaleSliderStorable.setCallbackFunction = v =>
             {
-                _curveEditor.SetValueBounds(_curve1JSON, Vector2.zero, new Vector2(v, valueScaleSliderStorable.val));
-                _curveEditor.SetValueBounds(_curve2JSON, Vector2.zero, new Vector2(v, valueScaleSliderStorable.val));
+                _curveEditor.SetValueBounds(_curve1JSON, Vector2.zero, new Vector2(v, valueScaleSliderStorable.val), normalizeScaleStorable.val);
+                _curveEditor.SetValueBounds(_curve2JSON, Vector2.zero, new Vector2(v, valueScaleSliderStorable.val), normalizeScaleStorable.val);
             };
 
             var valueScaleSlider = CreateSlider(valueScaleSliderStorable);
 
             valueScaleSliderStorable.setCallbackFunction = v =>
             {
-                _curveEditor.SetValueBounds(_curve1JSON, Vector2.zero, new Vector2(timeScaleSliderStorable.val, v));
-                _curveEditor.SetValueBounds(_curve2JSON, Vector2.zero, new Vector2(timeScaleSliderStorable.val, v));
+                _curveEditor.SetValueBounds(_curve1JSON, Vector2.zero, new Vector2(timeScaleSliderStorable.val, v), normalizeScaleStorable.val);
+                _curveEditor.SetValueBounds(_curve2JSON, Vector2.zero, new Vector2(timeScaleSliderStorable.val, v), normalizeScaleStorable.val);
             };
         }
 
