@@ -303,19 +303,18 @@ namespace CurveEditor.UI
             // Ensure view matrix is up to date
             UpdateViewMatrix();
 
-            float minX = float.PositiveInfinity, minY = float.PositiveInfinity;
-            float maxX = float.NegativeInfinity, maxY = float.NegativeInfinity;
-            foreach (var key in _lines.SelectMany(l => l.curve.keys))
+            var valueMin = Vector2.positiveInfinity;
+            var valueMax = Vector2.negativeInfinity;
+            foreach (var line in _lines)
             {
-                //TODO: apply drawScale to preserve current?
-                maxX = Mathf.Max(maxX, key.time);
-                minX = Mathf.Min(minX, key.time);
-                maxY = Mathf.Max(maxY, key.value);
-                minY = Mathf.Min(minY, key.value);
+                foreach (var key in line.curve.keys)
+                {
+                    var position = new Vector2(key.time, key.value);
+                    valueMin = Vector2.Min(valueMin, position);
+                    valueMax = Vector2.Max(valueMax, position);
+                }
             }
 
-            var valueMin = new Vector2(minX, minY);
-            var valueMax = new Vector2(maxX, maxY);
             var valueBounds = new Bounds((valueMax + valueMin) / 2, valueMax - valueMin);
             var viewBounds = GetViewBounds();
 
