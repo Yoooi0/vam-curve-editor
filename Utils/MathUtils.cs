@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Leap.Unity.Swizzle;
+using UnityEngine;
 
 namespace CurveEditor.Utils
 {
@@ -22,5 +23,8 @@ namespace CurveEditor.Utils
             => Quaternion.Euler(angles) * (point - pivot) + pivot;
         public static Vector2 RotatePointAroundPivot(Vector2 point, Vector2 pivot, float angle)
             => RotatePointAroundPivot(point, pivot, angle * Vector3.forward);
+
+        public static Vector2 MultiplyPoint2d(this Matrix4x4 m, Vector2 point) => m.MultiplyPoint3x4(point).xy();
+        public static Vector2 MultiplyPoint2d(this Matrix4x4 m, Vector3 point) => m.MultiplyPoint3x4(point).xy();
     }
 }
