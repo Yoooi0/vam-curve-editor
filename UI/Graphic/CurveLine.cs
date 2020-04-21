@@ -36,18 +36,15 @@ namespace CurveEditor.UI
 
         public void PopulateMesh(VertexHelper vh, Matrix4x4 viewMatrix, Bounds viewBounds)
         {
-            var minT = _drawScale.Reverse(viewBounds.min).x;
-            var maxT = _drawScale.Reverse(viewBounds.max).x;
+            var min = _drawScale.Reverse(viewBounds.min);
+            var max = _drawScale.Reverse(viewBounds.max);
 
             var curvePoints = new Vector2[evaluateCount];
             for (var i = 0; i < evaluateCount; i++)
             {
-                //TODO: clip Y?
-                var t = Mathf.Lerp(minT, maxT, (float)i / (evaluateCount - 1));
-                if (t < minT || t > maxT)
-                    continue;
-
-                curvePoints[i] = _drawScale.Apply(new Vector2(t, curve.Evaluate(t)));
+                var x = Mathf.Lerp(min.x, max.x, (float)i / (evaluateCount - 1));
+                var y = curve.Evaluate(x);
+                curvePoints[i] = _drawScale.Apply(new Vector2(x, y));
             }
 
             vh.AddLine(curvePoints, thickness, _colors.lineColor, viewMatrix);

@@ -55,7 +55,6 @@ namespace CurveEditor.UI
         {
             vh.Clear();
 
-            //TODO: prescale viewBounds for each line?
             var viewBounds = GetViewBounds();
             if (_showGrid)
                 PopulateGrid(vh, viewBounds);
