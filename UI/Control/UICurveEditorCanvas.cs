@@ -57,7 +57,7 @@ namespace CurveEditor.UI
 
             var viewBounds = GetViewBounds();
             if (_showGrid)
-                PopulateGrid(vh, viewBounds);
+                PopulateGrid(vh, viewBounds, _lines[0].drawScale); // TODO: allow selecting line/drawScale
 
             if (_showScrubbers)
                 foreach (var kv in _scrubberPositions)
@@ -71,19 +71,27 @@ namespace CurveEditor.UI
                     kv.Key.PopulateScrubberPoints(vh, _viewMatrix, viewBounds, kv.Value);
         }
 
-        private void PopulateGrid(VertexHelper vh, Bounds bounds)
+        private void PopulateGrid(VertexHelper vh, Bounds bounds, DrawScaleOffset drawScale)
         {
-            var min = bounds.min;
-            var max = bounds.max;
-            for (var v = Mathf.Floor(min.x); v <= Mathf.Ceil(max.x); v += 0.5f)
-                vh.AddLine(new Vector2(v, min.y), new Vector2(v, max.y), 0.01f, _gridColor, _viewMatrix);
-            for (var v = Mathf.Floor(min.y); v <= Mathf.Ceil(max.y); v += 0.5f)
-                vh.AddLine(new Vector2(min.x, v), new Vector2(max.x, v), 0.01f, _gridColor, _viewMatrix);
+            var viewMin = bounds.min;
+            var viewMax = bounds.max;
 
-            if (min.y < 0 && max.y > 0)
-                vh.AddLine(new Vector2(min.x, 0), new Vector2(max.x, 0), 0.04f, _girdAxisColor, _viewMatrix);
-            if (min.x < 0 && max.x > 0)
-                vh.AddLine(new Vector2(0, min.y), new Vector2(0, max.y), 0.04f, _girdAxisColor, _viewMatrix);
+            var stepX = drawScale.ApplyX(0.5f);
+            var stepY = drawScale.ApplyY(0.5f);
+            var minX = Mathf.Floor(viewMin.x / stepX) * stepX;
+            var maxX = Mathf.Ceil(viewMax.x / stepX) * stepX;
+            var minY = Mathf.Floor(viewMin.y / stepY) * stepY;
+            var maxY = Mathf.Ceil(viewMax.y / stepY) * stepY;
+
+            for (var x = minX; x <= maxX; x += stepX)
+                vh.AddLine(new Vector2(x, viewMin.y), new Vector2(x, viewMax.y), 0.01f, _gridColor, _viewMatrix);
+            for (var y = minY; y <= maxY; y += stepY)
+                vh.AddLine(new Vector2(viewMin.x, y), new Vector2(viewMax.x, y), 0.01f, _gridColor, _viewMatrix);
+
+            if (viewMin.y < 0 && viewMax.y > 0)
+                vh.AddLine(new Vector2(viewMin.x, 0), new Vector2(viewMax.x, 0), 0.04f, _girdAxisColor, _viewMatrix);
+            if (viewMin.x < 0 && viewMax.x > 0)
+                vh.AddLine(new Vector2(0, viewMin.y), new Vector2(0, viewMax.y), 0.04f, _girdAxisColor, _viewMatrix);
         }
 
         protected void Update()
