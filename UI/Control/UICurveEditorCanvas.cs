@@ -205,10 +205,10 @@ namespace CurveEditor.UI
         public void OnBeginDrag(PointerEventData eventData)
         {
             Vector2 localPoint;
-            if (!ScreenPointToLocalPoint(eventData, out localPoint))
+            if (!ScreenPointToLocalPoint(eventData.pressPosition, eventData.pressEventCamera, out localPoint))
                 return;
 
-            var position = _viewMatrixInv.MultiplyPoint3x4(localPoint);
+            var position = _viewMatrixInv.MultiplyPoint2d(localPoint);
             if (selectedPoint?.OnBeginDrag(position) == true)
             {
                 selectedPoint.parent.SetCurveFromPoints();
@@ -233,10 +233,10 @@ namespace CurveEditor.UI
         public void OnDrag(PointerEventData eventData)
         {
             Vector2 localPoint;
-            if (!ScreenPointToLocalPoint(eventData, out localPoint))
+            if (!ScreenPointToLocalPoint(eventData.position, eventData.pressEventCamera, out localPoint))
                 return;
 
-            var position = _viewMatrixInv.MultiplyPoint3x4(localPoint);
+            var position = _viewMatrixInv.MultiplyPoint2d(localPoint);
             if (!allowViewDragging)
             {
                 var viewBounds = GetViewBounds();
@@ -262,10 +262,10 @@ namespace CurveEditor.UI
         public void OnEndDrag(PointerEventData eventData)
         {
             Vector2 localPoint;
-            if (!ScreenPointToLocalPoint(eventData, out localPoint))
+            if (!ScreenPointToLocalPoint(eventData.position, eventData.pressEventCamera, out localPoint))
                 return;
 
-            var position = _viewMatrixInv.MultiplyPoint3x4(localPoint);
+            var position = _viewMatrixInv.MultiplyPoint2d(localPoint);
             if (selectedPoint?.OnEndDrag(position) == true)
             {
                 selectedPoint.parent.SetCurveFromPoints();
@@ -286,10 +286,10 @@ namespace CurveEditor.UI
                 return;
 
             Vector2 localPoint;
-            if (!ScreenPointToLocalPoint(eventData, out localPoint))
+            if (!ScreenPointToLocalPoint(eventData.position, eventData.pressEventCamera, out localPoint))
                 return;
 
-            var position = _viewMatrixInv.MultiplyPoint3x4(localPoint);
+            var position = _viewMatrixInv.MultiplyPoint2d(localPoint);
             if (selectedPoint?.OnPointerClick(position) == true)
             {
                 SetVerticesDirty();
@@ -439,12 +439,12 @@ namespace CurveEditor.UI
             SetVerticesDirty();
         }
 
-        private bool ScreenPointToLocalPoint(PointerEventData eventData, out Vector2 position)
+        private bool ScreenPointToLocalPoint(Vector2 screenPoint, Camera camera, out Vector2 position)
         {
             position = Vector2.zero;
 
             Vector2 localPosition;
-            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(rectTransform, eventData.position, eventData.pressEventCamera, out localPosition))
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(rectTransform, screenPoint, camera, out localPosition))
                 return false;
 
             position = localPosition;
