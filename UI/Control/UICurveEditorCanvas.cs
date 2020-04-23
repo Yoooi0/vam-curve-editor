@@ -1,4 +1,4 @@
-using CurveEditor.Utils;
+﻿using CurveEditor.Utils;
 using Leap;
 using System.Collections.Generic;
 using System.Linq;
@@ -237,6 +237,13 @@ namespace CurveEditor.UI
                 return;
 
             var position = _viewMatrixInv.MultiplyPoint3x4(localPoint);
+            if (!allowViewDragging)
+            {
+                var viewBounds = GetViewBounds();
+                position.x = Mathf.Clamp(position.x, viewBounds.min.x, viewBounds.max.x);
+                position.y = Mathf.Clamp(position.y, viewBounds.min.y, viewBounds.max.y);
+            }
+
             if (selectedPoint?.OnDrag(position) == true)
             {
                 selectedPoint.parent.SetCurveFromPoints();
