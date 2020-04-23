@@ -1,4 +1,4 @@
-﻿using CurveEditor.Utils;
+using CurveEditor.Utils;
 using Leap;
 using System.Collections.Generic;
 using System.Linq;
@@ -115,14 +115,19 @@ namespace CurveEditor.UI
                 if (Input.GetKeyDown(KeyCode.W))
                 {
                     foreach (var line in _lines)
+                    {
                         line.drawScale.Resize(2f);
+                        line.SetPointsFromCurve();
+                    }
 
                     SetVerticesDirty();
                 }
                 if (Input.GetKeyDown(KeyCode.S))
                 {
-                    foreach (var line in _lines)
+                    foreach (var line in _lines) { 
                         line.drawScale.Resize(0.5f);
+                        line.SetPointsFromCurve();
+                    }
 
                     SetVerticesDirty();
                 }
