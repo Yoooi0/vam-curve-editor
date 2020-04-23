@@ -10,11 +10,11 @@ namespace CurveEditor.UI
         private readonly UICurveLineColors _colors; //TODO: just point colors
 
         private float _pointRadius = 0.08f;
-        private float _pointSkin = 0.05f;
+        private float _pointSkin = 0.04f;
         private float _handleRadius = 0.07f;
         private float _handleSkin = 0.04f;
         private float _shellSize = 0.2f;
-        private float _handleThickness = 0.04f;
+        private float _handleThickness = 0.03f;
         private float _outHandleLength = 0.5f;
         private float _inHandleLength = 0.5f;
         private bool _isDraggingPoint = false;
@@ -136,28 +136,24 @@ namespace CurveEditor.UI
             if (Vector2.Distance(point, position) <= _pointRadius + _pointSkin)
             {
                 _isDraggingPoint = true;
-                this.position = point;
-                return true;
+                position = point;
             }
 
-            if (!showHandles)
-                return false;
-
-            if (Vector3.Distance(point, position + _outHandlePosition) <= _handleRadius + _handleSkin)
+            if (showHandles)
             {
-                _isDraggingOutHandle = true;
-                SetOutHandlePosition(point - position);
-                return true;
-            }
-            else if (Vector2.Distance(point, position + _inHandlePosition) <= _handleRadius + _handleSkin)
-            {
-                _isDraggingInHandle = true;
-                SetInHandlePosition(point - position);
-                return true;
+                if (Vector3.Distance(point, position + _outHandlePosition) <= _handleRadius + _handleSkin)
+                {
+                    _isDraggingOutHandle = true;
+                    SetOutHandlePosition(point - position);
+                }
+                else if (Vector2.Distance(point, position + _inHandlePosition) <= _handleRadius + _handleSkin)
+                {
+                    _isDraggingInHandle = true;
+                    SetInHandlePosition(point - position);
+                }
             }
 
-            return false;
-
+            return _isDraggingPoint || _isDraggingOutHandle || _isDraggingInHandle;
         }
 
         public bool OnDrag(Vector2 point)

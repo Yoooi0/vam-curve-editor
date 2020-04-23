@@ -24,6 +24,8 @@ namespace CurveEditor.UI
         private Color _girdAxisColor = new Color(0.5f, 0.5f, 0.5f);
         private float _zoom = 100;
 
+        private bool _isCtrlDown, _isShiftDown, _isAltDown;
+
         private Matrix4x4 _viewMatrixInv => _viewMatrix.inverse;
 
         public CurveEditorPoint selectedPoint { get; private set; } = null;
@@ -56,8 +58,8 @@ namespace CurveEditor.UI
             vh.Clear();
 
             var viewBounds = GetViewBounds();
-            if (_showGrid)
-                PopulateGrid(vh, viewBounds, _lines[0].drawScale); // TODO: allow selecting line/drawScale
+            if (_showGrid && _lines.Count > 0)
+                PopulateGrid(vh, viewBounds, _lines.Last().drawScale); // TODO: allow selecting line/drawScale
 
             if (_showScrubbers)
                 foreach (var kv in _scrubberPositions)
@@ -96,6 +98,10 @@ namespace CurveEditor.UI
 
         protected void Update()
         {
+            _isCtrlDown = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+            _isShiftDown = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+            _isAltDown = Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt) || Input.GetKey(KeyCode.AltGr);
+
             if (!allowKeyboardShortcuts)
                 return;
 
@@ -205,10 +211,10 @@ namespace CurveEditor.UI
         public void OnBeginDrag(PointerEventData eventData)
         {
             Vector2 localPoint;
-            if (!ScreenPointToLocalPoint(eventData, out localPoint))
+            if (!ScreenPointToLocalPoint(eventData.pressPosition, eventData.pressEventCamera, out localPoint))
                 return;
 
-            var position = _viewMatrixInv.MultiplyPoint3x4(localPoint);
+            var position = _viewMatrixInv.MultiplyPoint2d(localPoint);
             if (selectedPoint?.OnBeginDrag(position) == true)
             {
                 selectedPoint.parent.SetCurveFromPoints();
@@ -233,10 +239,10 @@ namespace CurveEditor.UI
         public void OnDrag(PointerEventData eventData)
         {
             Vector2 localPoint;
-            if (!ScreenPointToLocalPoint(eventData, out localPoint))
+            if (!ScreenPointToLocalPoint(eventData.position, eventData.pressEventCamera, out localPoint))
                 return;
 
-            var position = _viewMatrixInv.MultiplyPoint3x4(localPoint);
+            var position = _viewMatrixInv.MultiplyPoint2d(localPoint);
             if (!allowViewDragging)
             {
                 var viewBounds = GetViewBounds();
@@ -244,11 +250,21 @@ namespace CurveEditor.UI
                 position.y = Mathf.Clamp(position.y, viewBounds.min.y, viewBounds.max.y);
             }
 
-            if (selectedPoint?.OnDrag(position) == true)
+            if(selectedPoint != null)
             {
-                selectedPoint.parent.SetCurveFromPoints();
-                SetVerticesDirty();
-                return;
+                if (_isCtrlDown)
+                {
+                    var gridSnap = selectedPoint.parent.drawScale.Apply(Vector2.one / 2);
+                    position.x = Mathf.Round(position.x / gridSnap.x) * gridSnap.x;
+                    position.y = Mathf.Round(position.y / gridSnap.y) * gridSnap.y;
+                }
+
+                if (selectedPoint.OnDrag(position))
+                {
+                    selectedPoint.parent.SetCurveFromPoints();
+                    SetVerticesDirty();
+                    return;
+                }
             }
 
             if (allowViewDragging)
@@ -262,10 +278,10 @@ namespace CurveEditor.UI
         public void OnEndDrag(PointerEventData eventData)
         {
             Vector2 localPoint;
-            if (!ScreenPointToLocalPoint(eventData, out localPoint))
+            if (!ScreenPointToLocalPoint(eventData.position, eventData.pressEventCamera, out localPoint))
                 return;
 
-            var position = _viewMatrixInv.MultiplyPoint3x4(localPoint);
+            var position = _viewMatrixInv.MultiplyPoint2d(localPoint);
             if (selectedPoint?.OnEndDrag(position) == true)
             {
                 selectedPoint.parent.SetCurveFromPoints();
@@ -286,10 +302,10 @@ namespace CurveEditor.UI
                 return;
 
             Vector2 localPoint;
-            if (!ScreenPointToLocalPoint(eventData, out localPoint))
+            if (!ScreenPointToLocalPoint(eventData.position, eventData.pressEventCamera, out localPoint))
                 return;
 
-            var position = _viewMatrixInv.MultiplyPoint3x4(localPoint);
+            var position = _viewMatrixInv.MultiplyPoint2d(localPoint);
             if (selectedPoint?.OnPointerClick(position) == true)
             {
                 SetVerticesDirty();
@@ -439,12 +455,12 @@ namespace CurveEditor.UI
             SetVerticesDirty();
         }
 
-        private bool ScreenPointToLocalPoint(PointerEventData eventData, out Vector2 position)
+        private bool ScreenPointToLocalPoint(Vector2 screenPoint, Camera camera, out Vector2 position)
         {
             position = Vector2.zero;
 
             Vector2 localPosition;
-            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(rectTransform, eventData.position, eventData.pressEventCamera, out localPosition))
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(rectTransform, screenPoint, camera, out localPosition))
                 return false;
 
             position = localPosition;
