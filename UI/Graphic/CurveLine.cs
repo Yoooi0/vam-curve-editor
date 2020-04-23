@@ -21,7 +21,7 @@ namespace CurveEditor.UI
         }
 
         public float thickness { get; set; } = 0.04f;
-        public int evaluateCount { get; set; } = 200;
+        public int evaluateCount { get; set; } = 100;
         public AnimationCurve curve => _storable.val;
 
         public CurveLine(IStorableAnimationCurve storable, UICurveLineColors colors = null)

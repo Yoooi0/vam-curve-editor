@@ -37,8 +37,8 @@ namespace CurveEditor.UI
         public void Resize(float v) => ratio *= v;
         public Vector2 Apply(Vector2 value) => value * ratio + offset;
         public Vector2 Reverse(Vector2 value) => (value - offset) / ratio;
-        public float ApplyX(float x) => x * ratio.x / offset.x;
-        public float ApplyY(float y) => y * ratio.y / offset.y;
+        public float ApplyX(float x) => x * ratio.x + offset.x;
+        public float ApplyY(float y) => y * ratio.y + offset.y;
         public float ReverseX(float x) => (x - offset.x) / ratio.x;
         public float ReverseY(float y) => (y - offset.y) / ratio.y;
     }
