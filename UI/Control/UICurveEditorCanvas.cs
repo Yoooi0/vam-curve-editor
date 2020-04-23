@@ -1,4 +1,4 @@
-﻿using CurveEditor.Utils;
+using CurveEditor.Utils;
 using Leap;
 using System.Collections.Generic;
 using System.Linq;
@@ -56,8 +56,8 @@ namespace CurveEditor.UI
             vh.Clear();
 
             var viewBounds = GetViewBounds();
-            if (_showGrid)
-                PopulateGrid(vh, viewBounds, _lines[0].drawScale); // TODO: allow selecting line/drawScale
+            if (_showGrid && _lines.Count > 0)
+                PopulateGrid(vh, viewBounds, _lines.Last().drawScale); // TODO: allow selecting line/drawScale
 
             if (_showScrubbers)
                 foreach (var kv in _scrubberPositions)
