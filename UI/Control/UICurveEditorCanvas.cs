@@ -1,4 +1,4 @@
-using CurveEditor.Utils;
+﻿using CurveEditor.Utils;
 using Leap;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,6 +23,8 @@ namespace CurveEditor.UI
         private Color _gridColor = new Color(0.6f, 0.6f, 0.6f);
         private Color _girdAxisColor = new Color(0.5f, 0.5f, 0.5f);
         private float _zoom = 100;
+
+        private bool _isCtrlDown, _isShiftDown, _isAltDown;
 
         private Matrix4x4 _viewMatrixInv => _viewMatrix.inverse;
 
@@ -96,6 +98,10 @@ namespace CurveEditor.UI
 
         protected void Update()
         {
+            _isCtrlDown = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+            _isShiftDown = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+            _isAltDown = Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt) || Input.GetKey(KeyCode.AltGr);
+
             if (!allowKeyboardShortcuts)
                 return;
 
@@ -244,11 +250,21 @@ namespace CurveEditor.UI
                 position.y = Mathf.Clamp(position.y, viewBounds.min.y, viewBounds.max.y);
             }
 
-            if (selectedPoint?.OnDrag(position) == true)
+            if(selectedPoint != null)
             {
-                selectedPoint.parent.SetCurveFromPoints();
-                SetVerticesDirty();
-                return;
+                if (_isCtrlDown)
+                {
+                    var gridSnap = selectedPoint.parent.drawScale.Apply(Vector2.one / 2);
+                    position.x = Mathf.Round(position.x / gridSnap.x) * gridSnap.x;
+                    position.y = Mathf.Round(position.y / gridSnap.y) * gridSnap.y;
+                }
+
+                if (selectedPoint.OnDrag(position))
+                {
+                    selectedPoint.parent.SetCurveFromPoints();
+                    SetVerticesDirty();
+                    return;
+                }
             }
 
             if (allowViewDragging)
