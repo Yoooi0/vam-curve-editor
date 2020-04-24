@@ -1,4 +1,4 @@
-﻿using CurveEditor.Utils;
+using CurveEditor.Utils;
 using Leap;
 using System.Collections.Generic;
 using System.Linq;
@@ -321,7 +321,7 @@ namespace CurveEditor.UI
 
             if (eventData.clickCount > 0 && eventData.clickCount % 2 == 0)
             {
-                var closestLine = _lines.OrderBy(l => l.DistanceToPoint(position)).FirstOrDefault();
+                var closestLine = _lines.OrderBy(l => l.DistanceToPoint(l.drawScale.inverse.Scale(position))).FirstOrDefault();
 
                 var created = closestLine.CreatePoint(position);
                 closestLine.SetCurveFromPoints();
