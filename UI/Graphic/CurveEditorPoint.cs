@@ -1,4 +1,3 @@
-using System;
 using CurveEditor.Utils;
 using UnityEngine;
 using UnityEngine.UI;

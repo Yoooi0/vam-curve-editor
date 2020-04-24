@@ -1,8 +1,4 @@
-using Leap.Unity;
-using Leap.Unity.Swizzle;
-using System;
 using UnityEngine;
-using VikingCrewTools.UI;
 
 namespace CurveEditor.UI
 {
