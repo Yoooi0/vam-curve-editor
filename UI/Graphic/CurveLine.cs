@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using CurveEditor.Utils;
 using UnityEngine;
@@ -36,15 +35,15 @@ namespace CurveEditor.UI
 
         public void PopulateMesh(VertexHelper vh, Matrix4x4 viewMatrix, Bounds viewBounds)
         {
-            var min = _drawScale.Reverse(viewBounds.min);
-            var max = _drawScale.Reverse(viewBounds.max);
+            var min = _drawScale.inverse.Multiply(viewBounds.min);
+            var max = _drawScale.inverse.Multiply(viewBounds.max);
 
             var curvePoints = new Vector2[evaluateCount];
             for (var i = 0; i < evaluateCount; i++)
             {
                 var x = Mathf.Lerp(min.x, max.x, (float)i / (evaluateCount - 1));
                 var y = curve.Evaluate(x);
-                curvePoints[i] = _drawScale.Apply(new Vector2(x, y));
+                curvePoints[i] = _drawScale.Multiply(new Vector2(x, y));
             }
 
             vh.AddLine(curvePoints, thickness, _colors.lineColor, viewMatrix);
@@ -54,18 +53,18 @@ namespace CurveEditor.UI
 
         public void PopulateScrubberLine(VertexHelper vh, Matrix4x4 viewMatrix, Bounds viewBounds, float x)
         {
-            var min = _drawScale.Reverse(viewBounds.min);
-            var max = _drawScale.Reverse(viewBounds.max);
+            var min = _drawScale.inverse.Multiply(viewBounds.min);
+            var max = _drawScale.inverse.Multiply(viewBounds.max);
             if (x < min.x || x > max.x)
                 return;
 
-            vh.AddLine(_drawScale.Apply(new Vector2(x, min.y)), _drawScale.Apply(new Vector2(x, max.y)), 0.02f, Color.black, viewMatrix);
+            vh.AddLine(_drawScale.Multiply(new Vector2(x, min.y)), _drawScale.Multiply(new Vector2(x, max.y)), 0.02f, Color.black, viewMatrix);
         }
 
         public void PopulateScrubberPoints(VertexHelper vh, Matrix4x4 viewMatrix, Bounds viewBounds, float x)
         {
-            var min = _drawScale.Reverse(viewBounds.min);
-            var max = _drawScale.Reverse(viewBounds.max);
+            var min = _drawScale.inverse.Multiply(viewBounds.min);
+            var max = _drawScale.inverse.Multiply(viewBounds.max);
             if (x + 0.06f < min.x || x - 0.06f > max.x)
                 return;
 
@@ -73,7 +72,7 @@ namespace CurveEditor.UI
             if (y + 0.06f < min.y || y - 0.06f > max.y)
                 return;
 
-            vh.AddCircle(_drawScale.Apply(new Vector2(x, y)), 0.03f, Color.white, viewMatrix);
+            vh.AddCircle(_drawScale.Multiply(new Vector2(x, y)), 0.03f, Color.white, viewMatrix);
         }
 
         public void SetCurveFromPoints()
@@ -86,9 +85,9 @@ namespace CurveEditor.UI
             {
                 var point = points[i];
 
-                var position = _drawScale.Reverse(point.position);
-                var outPosition = _drawScale.Reverse(point.outHandlePosition);
-                var inPosition = _drawScale.Reverse(point.inHandlePosition);
+                var position = _drawScale.inverse.Multiply(point.position);
+                var outPosition = _drawScale.inverse.Scale(point.outHandlePosition);
+                var inPosition = _drawScale.inverse.Scale(point.inHandlePosition);
 
                 var key = new Keyframe(position.x, position.y);
                 key.weightedMode = (WeightedMode)(point.inHandleMode | point.outHandleMode << 1);
@@ -105,7 +104,7 @@ namespace CurveEditor.UI
                     var prev = i > 0 ? points[i - 1] : null;
                     if (prev != null)
                     {
-                        var prevPosition = _drawScale.Reverse(prev.position);
+                        var prevPosition = _drawScale.inverse.Scale(prev.position);
                         var dx = position.x - prevPosition.x;
                         key.inWeight = Mathf.Clamp(Mathf.Abs(inPosition.x / dx), 0f, 1f);
                     }
@@ -123,7 +122,7 @@ namespace CurveEditor.UI
                     var next = i < points.Count - 1 ? points[i + 1] : null;
                     if (next != null)
                     {
-                        var nextPosition = _drawScale.Reverse(next.position);
+                        var nextPosition = _drawScale.inverse.Scale(next.position);
                         var dx = nextPosition.x - position.x;
                         key.outWeight = Mathf.Clamp(Mathf.Abs(outPosition.x / dx), 0f, 1f);
                     }
@@ -150,15 +149,15 @@ namespace CurveEditor.UI
                 var point = points[i];
                 var key = curve[i];
 
-                point.position = _drawScale.Apply(new Vector2(key.time, key.value));
+                point.position = _drawScale.Multiply(new Vector2(key.time, key.value));
                 point.handleMode = key.inTangent != key.outTangent ? 1 : 0;
                 point.inHandleMode = ((int)key.weightedMode & 1) > 0 ? 1 : 0;
                 point.outHandleMode = ((int)key.weightedMode & 2) > 0 ? 1 : 0;
 
-                var outHandleNormal = _drawScale.ratio * (MathUtils.VectorFromAngle(Mathf.Atan(key.outTangent)).normalized);
+                var outHandleNormal = _drawScale.Scale(MathUtils.VectorFromAngle(Mathf.Atan(key.outTangent)).normalized);
                 if (point.outHandleMode == 1 && i < curve.length - 1)
                 {
-                    var x = key.outWeight * _drawScale.ApplyX(curve[i + 1].time - key.time);
+                    var x = key.outWeight * _drawScale.ratio.x * (curve[i + 1].time - key.time);
                     var y = x * (outHandleNormal.y / outHandleNormal.x);
                     var length = Mathf.Sqrt(x * x + y * y);
                     point.outHandlePosition = outHandleNormal * length;
@@ -168,10 +167,10 @@ namespace CurveEditor.UI
                     point.outHandlePosition = outHandleNormal * point.outHandleLength;
                 }
 
-                var inHandleNormal = _drawScale.ratio * (-MathUtils.VectorFromAngle(Mathf.Atan(key.inTangent)).normalized);
+                var inHandleNormal = _drawScale.Scale(-MathUtils.VectorFromAngle(Mathf.Atan(key.inTangent)).normalized);
                 if (point.inHandleMode == 1 && i > 0)
                 {
-                    var x = key.inWeight * _drawScale.ApplyX(key.time - curve[i - 1].time);
+                    var x = key.inWeight * _drawScale.ratio.x * (key.time - curve[i - 1].time);
                     var y = x * (inHandleNormal.y / inHandleNormal.x);
                     var length = Mathf.Sqrt(x * x + y * y);
                     point.inHandlePosition = inHandleNormal * length;
@@ -217,8 +216,9 @@ namespace CurveEditor.UI
 
         public float DistanceToPoint(Vector2 point)
         {
-            point = _drawScale.Reverse(point);
-            return Mathf.Abs(point.y - curve.Evaluate(point.x));
+            var localPoint = drawScale.inverse.Multiply(point);
+            var screenEval = drawScale.Multiply(new Vector2(localPoint.x, curve.Evaluate(localPoint.x)));
+            return Mathf.Abs(point.y - screenEval.y);
         }
 
         private class UICurveEditorPointComparer : IComparer<CurveEditorPoint>
