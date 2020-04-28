@@ -72,10 +72,10 @@ namespace CurveEditor.UI
             gameObject = new GameObject();
             gameObject.transform.SetParent(container.transform, false);
 
-            var mask = gameObject.AddComponent<RectTransform>();
-            mask.anchoredPosition = new Vector2(0, buttonContainerHeight / 2);
-            mask.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
-            mask.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height - buttonContainerHeight);
+            var mask = gameObject.AddComponent<RectMask2D>();
+            mask.rectTransform.anchoredPosition = new Vector2(0, buttonContainerHeight / 2);
+            mask.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
+            mask.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height - buttonContainerHeight);
 
             var backgroundContent = new GameObject();
             backgroundContent.transform.SetParent(gameObject.transform, false);
