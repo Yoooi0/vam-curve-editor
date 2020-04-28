@@ -13,19 +13,19 @@ namespace CurveEditor
 
         private UICurveEditor _curveEditor;
         private Animation _animation;
-        private JSONStorableAnimationCurve _curveJSON, _curve2JSON;
+        private JSONStorableAnimationCurve _curve1JSON, _curve2JSON;
 
         public override void Init()
         {
             try
             {
-                if(containingAtom != null)
+                if (containingAtom != null)
                     _animation = containingAtom.GetComponent<Animation>() ?? containingAtom.gameObject.AddComponent<Animation>();
 
-                _curveJSON = new JSONStorableAnimationCurve("Curve", CurveUpdated);
-                _curveJSON.SetValToDefault();
-                _curve2JSON = new JSONStorableAnimationCurve("Curve", CurveUpdated);
-                _curve2JSON.val = AnimationCurve.Linear(0f, 0.5f, 1f, 0.5f);
+                _curve1JSON = new JSONStorableAnimationCurve("Curve 1", CurveUpdated);
+                _curve1JSON.val = AnimationCurve.EaseInOut(0, 0, 2, 10);
+                _curve2JSON = new JSONStorableAnimationCurve("Curve 2", CurveUpdated);
+                _curve2JSON.val = AnimationCurve.EaseInOut(0, 1, 2, 0);
 
                 CreateUI();
             }
@@ -64,17 +64,22 @@ namespace CurveEditor
             curveEditorButtons[3].button.onClick.AddListener(() => _curveEditor.SetLinear());
 
             _curveEditor = new UICurveEditor(container, 520, container.height, buttons: curveEditorButtons);
-            _curveEditor.AddCurve(_curveJSON, UICurveLineColors.CreateFrom(new Color(0.388f, 0.698f, 0.890f)));
+            _curveEditor.AddCurve(_curve1JSON, UICurveLineColors.CreateFrom(new Color(0.388f, 0.698f, 0.890f)));
+            _curveEditor.SetValueBounds(_curve1JSON, new Rect(0, 0, 2, 10), true, true);
             _curveEditor.AddCurve(_curve2JSON, UICurveLineColors.CreateFrom(new Color(0.890f, 0.388f, 0.398f)));
+            _curveEditor.SetValueBounds(_curve2JSON, new Rect(0, 0, 2, 1), true, true);
 
             var resetButton = CreateButton("Reset");
             var playButton = CreateButton("Play");
             var stopButton = CreateButton("Stop");
+            var fitButton = CreateButton("Fit View");
 
             resetButton.button.onClick.AddListener(() =>
             {
-                _curveJSON.SetValToDefault();
-                _curveEditor.UpdateCurve(_curveJSON);
+                _curve1JSON.SetValToDefault();
+                _curveEditor.UpdateCurve(_curve1JSON);
+                _curve2JSON.SetValToDefault();
+                _curveEditor.UpdateCurve(_curve2JSON);
             });
             playButton.button.onClick.AddListener(() =>
             {
@@ -83,6 +88,10 @@ namespace CurveEditor
             stopButton.button.onClick.AddListener(() =>
             {
                 _animation.Stop();
+            });
+            fitButton.button.onClick.AddListener(() =>
+            {
+                _curveEditor.SetViewToFit(new Vector4(0.2f, 1, 0.2f, 1));
             });
 
             var readOnlyStorable = new JSONStorableBool("ReadOnly", false);
@@ -93,21 +102,60 @@ namespace CurveEditor
             var showScrubberToggle = CreateToggle(showScrubberStorable);
             showScrubberStorable.setCallbackFunction = v => _curveEditor.showScrubbers = v;
 
-            var sliderStorable = new JSONStorableFloat("Scrubber time", 0, 0, 1);
-            var slider = CreateSlider(sliderStorable);
+            var scrubberSliderStorable = new JSONStorableFloat("Scrubber time", 0, 0, 2);
+            var scrubberSlider = CreateSlider(scrubberSliderStorable);
 
-            sliderStorable.setCallbackFunction = v =>
+            scrubberSliderStorable.setCallbackFunction = v =>
             {
-                _curveEditor.SetScrubber(_curveJSON, v);
-                _curveEditor.SetScrubber(_curve2JSON, 1 - v);
+                var state = _animation["CurveEditorDemo"];
+                if (state != null)
+                {
+                    state.time = v;
+                }
+                _curveEditor.SetScrubber(_curve1JSON, v);
+                _curveEditor.SetScrubber(_curve2JSON, 2 - v);
+            };
+
+            var normalizeScaleStorable = new JSONStorableBool("Normalize to view", false);
+            var normalizeScaleToggle = CreateToggle(normalizeScaleStorable);
+
+            var offsetScaleStorable = new JSONStorableBool("Offset to center", false);
+            var offsetScaleToggle = CreateToggle(offsetScaleStorable);
+
+            var timeScaleSliderStorable = new JSONStorableFloat("Time Scale", 1, 0.5f, 8);
+            var valueScaleSliderStorable = new JSONStorableFloat("Value Scale", 1, 0.5f, 8);
+
+            var timeScaleSlider = CreateSlider(timeScaleSliderStorable);
+
+            timeScaleSliderStorable.setCallbackFunction = v =>
+            {
+                _curveEditor.SetValueBounds(_curve1JSON, new Rect(0, 0, v, valueScaleSliderStorable.val), normalizeScaleStorable.val, offsetScaleStorable.val);
+                _curveEditor.SetValueBounds(_curve2JSON, new Rect(0, 0, v, valueScaleSliderStorable.val), normalizeScaleStorable.val, offsetScaleStorable.val);
+            };
+
+            var valueScaleSlider = CreateSlider(valueScaleSliderStorable);
+
+            valueScaleSliderStorable.setCallbackFunction = v =>
+            {
+                _curveEditor.SetValueBounds(_curve1JSON, new Rect(0, 0, timeScaleSliderStorable.val, v), normalizeScaleStorable.val, offsetScaleStorable.val);
+                _curveEditor.SetValueBounds(_curve2JSON, new Rect(0, 0, timeScaleSliderStorable.val, v), normalizeScaleStorable.val, offsetScaleStorable.val);
             };
         }
 
-        protected void Update() { }
+        protected void Update()
+        {
+            if (_animation == null || _curve1JSON == null || _curveEditor == null) return;
+            if (_animation.isPlaying)
+            {
+                var state = _animation["CurveEditorDemo"];
+                if (state != null)
+                    _curveEditor.SetScrubberPosition(state.time % _curve1JSON.val[_curve1JSON.val.length - 1].time);
+            }
+        }
+
         protected void OnDestroy()
         {
-            if (_animation != null)
-                GameObject.Destroy(_animation);
+            // NOTE: We don't destroy the animation because reloading plugins will create before the previous one is destroyed.
             RemoveSpacer(_curveEditor.container);
         }
 
@@ -125,17 +173,16 @@ namespace CurveEditor
             };
             clip.SetCurve("", typeof(Transform), "localPosition.x", curve);
             _animation.AddClip(clip, "CurveEditorDemo");
-            if (playing)
-            {
-                _animation["CurveEditorDemo"].time = time;
-                _animation.Play("CurveEditorDemo");
-            }
+            _animation["CurveEditorDemo"].time = time;
+            _animation.Play("CurveEditorDemo");
+            if (!playing)
+                _animation.Stop("CurveEditorDemo");
         }
 
         public override JSONClass GetJSON(bool includePhysical = true, bool includeAppearance = true, bool forceStore = false)
         {
             var jc = base.GetJSON(includePhysical, includeAppearance, forceStore);
-            if (_curveJSON.StoreJSON(jc, includePhysical, includeAppearance, forceStore)) needsStore = true;
+            if (_curve1JSON.StoreJSON(jc, includePhysical, includeAppearance, forceStore)) needsStore = true;
             return jc;
         }
 
@@ -143,8 +190,8 @@ namespace CurveEditor
         {
             base.RestoreFromJSON(jc, restorePhysical, restoreAppearance, presetAtoms, setMissingToDefault);
 
-            _curveJSON.RestoreFromJSON(jc, restorePhysical, restoreAppearance, setMissingToDefault);
-            _curveEditor.UpdateCurve(_curveJSON);
+            _curve1JSON.RestoreFromJSON(jc, restorePhysical, restoreAppearance, setMissingToDefault);
+            _curveEditor.UpdateCurve(_curve1JSON);
         }
 
         public override void LateRestoreFromJSON(JSONClass jc, bool restorePhysical = true, bool restoreAppearance = true, bool setMissingToDefault = true)
