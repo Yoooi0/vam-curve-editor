@@ -72,10 +72,10 @@ namespace CurveEditor.UI
             gameObject = new GameObject();
             gameObject.transform.SetParent(container.transform, false);
 
-            var mask = gameObject.AddComponent<RectMask2D>();
-            mask.rectTransform.anchoredPosition = new Vector2(0, buttonContainerHeight / 2);
-            mask.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
-            mask.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height - buttonContainerHeight);
+            var mask = gameObject.AddComponent<RectTransform>();
+            mask.anchoredPosition = new Vector2(0, buttonContainerHeight / 2);
+            mask.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
+            mask.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height - buttonContainerHeight);
 
             var backgroundContent = new GameObject();
             backgroundContent.transform.SetParent(gameObject.transform, false);
@@ -125,8 +125,9 @@ namespace CurveEditor.UI
         public void UpdateCurve(IStorableAnimationCurve storable) => _canvas.UpdateCurve(storable);
         public void SetScrubberPosition(float time) => _canvas.SetScrubberPosition(time);
         public void SetScrubber(IStorableAnimationCurve storable, float time) => _canvas.SetScrubberPosition(storable, time);
-        public void SetValueBounds(IStorableAnimationCurve storable, Vector2 min, Vector2 max, bool normalizeToView = true) => _canvas.SetValueBounds(storable, min, max, normalizeToView);
-        public void SetViewToFit() => _canvas.SetViewToFit();
+        public void SetValueBounds(IStorableAnimationCurve storable, Rect valueBounds, bool normalizeToView = false, bool offsetToCenter = false) => _canvas.SetValueBounds(storable, valueBounds, normalizeToView, offsetToCenter);
+        public void SetValueBounds(IStorableAnimationCurve storable, Vector2 min, Vector2 max, bool normalizeToView = false, bool offsetToCenter = false) => _canvas.SetValueBounds(storable, min, max, normalizeToView, offsetToCenter);
+        public void SetViewToFit(Vector4 margin = new Vector4()) => _canvas.SetViewToFit(margin);
         public void ToggleHandleMode() => _canvas.ToggleHandleMode();
         public void ToggleOutHandleMode() => _canvas.ToggleOutHandleMode();
         public void ToggleInHandleMode() => _canvas.ToggleInHandleMode();

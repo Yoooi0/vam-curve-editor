@@ -1,4 +1,5 @@
-using CurveEditor.Utils;
+﻿using CurveEditor.Utils;
+using Leap.Unity.Swizzle;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -337,7 +338,7 @@ namespace CurveEditor.UI
             SetSelectedPoint(null);
         }
 
-        public void SetViewToFit()
+        public void SetViewToFit(Vector4 margin = new Vector4())
         {
             if (_lines.Count == 0)
                 return;
@@ -357,18 +358,20 @@ namespace CurveEditor.UI
                 }
             }
 
+            valueMin -= margin.xw();
+            valueMax += margin.zy();
+
             var valueBounds = new Rect(valueMin, valueMax - valueMin);
-            var viewBounds = GetViewBounds();
-
+            var drawScale = DrawScaleOffset.FromNormalizedValueBounds(valueBounds, GetViewBounds().size);
             foreach (var line in _lines)
-                line.drawScale = DrawScaleOffset.FromViewNormalizedValueBounds(valueBounds, viewBounds);
+                line.drawScale = new DrawScaleOffset(drawScale);
 
-            _cameraPosition = -_lines.First().drawScale.Multiply(valueBounds.min) * _zoom;
+            _cameraPosition = -drawScale.Multiply(valueBounds.min) * _zoom;
             UpdateViewMatrix();
             SetVerticesDirty();
         }
 
-        public void SetValueBounds(IStorableAnimationCurve storable, Vector2 valueMin, Vector2 valueMax, bool normalizeToView)
+        public void SetValueBounds(IStorableAnimationCurve storable, Rect valueBounds, bool normalizeToView = false, bool offsetToCenter = false)
         {
             // Ensure view matrix is up to date
             UpdateViewMatrix();
@@ -377,14 +380,16 @@ namespace CurveEditor.UI
             if (!_storableToLineMap.TryGetValue(storable, out line))
                 return;
 
-            var valueBounds = new Rect(valueMin, valueMax - valueMin);
+            var offset = offsetToCenter ? -valueBounds.min : Vector2.zero;
             if (normalizeToView)
-                line.drawScale = DrawScaleOffset.FromViewNormalizedValueBounds(valueBounds, GetViewBounds().size);
+                line.drawScale = DrawScaleOffset.FromNormalizedValueBounds(valueBounds, GetViewBounds().size, offset);
             else
-                line.drawScale = DrawScaleOffset.FromValueBounds(valueBounds);
+                line.drawScale = DrawScaleOffset.FromValueBounds(valueBounds, offset);
 
             SetVerticesDirty();
         }
+        public void SetValueBounds(IStorableAnimationCurve storable, Vector2 valueMin, Vector2 valueMax, bool normalizeToView = false, bool offsetToCenter = false)
+            => SetValueBounds(storable, new Rect(valueMin, valueMax - valueMin), normalizeToView, offsetToCenter);
 
         public void SetScrubberPosition(float time)
         {
