@@ -1,4 +1,4 @@
-﻿using CurveEditor.Utils;
+using CurveEditor.Utils;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -368,7 +368,7 @@ namespace CurveEditor.UI
             SetVerticesDirty();
         }
 
-        public void SetValueBounds(IStorableAnimationCurve storable, Vector2 valuMin, Vector2 valueMax, bool normalizeToView)
+        public void SetValueBounds(IStorableAnimationCurve storable, Vector2 valueMin, Vector2 valueMax, bool normalizeToView)
         {
             // Ensure view matrix is up to date
             UpdateViewMatrix();
@@ -377,9 +377,9 @@ namespace CurveEditor.UI
             if (!_storableToLineMap.TryGetValue(storable, out line))
                 return;
 
-            var valueBounds = new Rect(valuMin, valueMax - valuMin);
+            var valueBounds = new Rect(valueMin, valueMax - valueMin);
             if (normalizeToView)
-                line.drawScale = DrawScaleOffset.FromViewNormalizedValueBounds(valueBounds, GetViewBounds());
+                line.drawScale = DrawScaleOffset.FromViewNormalizedValueBounds(valueBounds, GetViewBounds().size);
             else
                 line.drawScale = DrawScaleOffset.FromValueBounds(valueBounds);
 
