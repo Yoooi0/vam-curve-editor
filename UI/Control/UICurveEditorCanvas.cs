@@ -1,4 +1,5 @@
 ﻿using CurveEditor.Utils;
+using Leap.Unity.Swizzle;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -72,7 +73,7 @@ namespace CurveEditor.UI
                     kv.Key.PopulateScrubberPoints(vh, _viewMatrix, viewBounds, kv.Value);
         }
 
-        private void PopulateGrid(VertexHelper vh, Bounds viewBounds, CurveLine line)
+        private void PopulateGrid(VertexHelper vh, Rect viewBounds, CurveLine line)
         {
             if (line == null)
                 return;
@@ -337,7 +338,7 @@ namespace CurveEditor.UI
             SetSelectedPoint(null);
         }
 
-        public void SetViewToFit()
+        public void SetViewToFit(Vector4 margin = new Vector4())
         {
             if (_lines.Count == 0)
                 return;
@@ -357,18 +358,20 @@ namespace CurveEditor.UI
                 }
             }
 
-            var valueBounds = new Bounds((valueMax + valueMin) / 2, valueMax - valueMin);
-            var viewBounds = GetViewBounds();
+            valueMin -= margin.xw();
+            valueMax += margin.zy();
 
+            var valueBounds = new Rect(valueMin, valueMax - valueMin);
+            var drawScale = DrawScaleOffset.FromNormalizedValueBounds(valueBounds, GetViewBounds().size);
             foreach (var line in _lines)
-                line.drawScale = DrawScaleOffset.FromViewNormalizedValueBounds(valueBounds, viewBounds);
+                line.drawScale = new DrawScaleOffset(drawScale);
 
-            _cameraPosition = -_lines.First().drawScale.Multiply(valueBounds.min) * _zoom;
+            _cameraPosition = -drawScale.Multiply(valueBounds.min) * _zoom;
             UpdateViewMatrix();
             SetVerticesDirty();
         }
 
-        public void SetValueBounds(IStorableAnimationCurve storable, Vector2 valuMin, Vector2 valueMax, bool normalizeToView)
+        public void SetValueBounds(IStorableAnimationCurve storable, Rect valueBounds, bool normalizeToView = false, bool offsetToCenter = false)
         {
             // Ensure view matrix is up to date
             UpdateViewMatrix();
@@ -377,14 +380,16 @@ namespace CurveEditor.UI
             if (!_storableToLineMap.TryGetValue(storable, out line))
                 return;
 
-            var valueBounds = new Bounds((valueMax + valuMin) / 2, valueMax - valuMin);
+            var offset = offsetToCenter ? -valueBounds.min : Vector2.zero;
             if (normalizeToView)
-                line.drawScale = DrawScaleOffset.FromViewNormalizedValueBounds(valueBounds, GetViewBounds());
+                line.drawScale = DrawScaleOffset.FromNormalizedValueBounds(valueBounds, GetViewBounds().size, offset);
             else
-                line.drawScale = DrawScaleOffset.FromValueBounds(valueBounds);
+                line.drawScale = DrawScaleOffset.FromValueBounds(valueBounds, offset);
 
             SetVerticesDirty();
         }
+        public void SetValueBounds(IStorableAnimationCurve storable, Vector2 valueMin, Vector2 valueMax, bool normalizeToView = false, bool offsetToCenter = false)
+            => SetValueBounds(storable, new Rect(valueMin, valueMax - valueMin), normalizeToView, offsetToCenter);
 
         public void SetScrubberPosition(float time)
         {
@@ -474,14 +479,14 @@ namespace CurveEditor.UI
             return true;
         }
 
-        private Bounds GetViewBounds()
+        private Rect GetViewBounds()
         {
             var viewMin = _viewMatrixInv.MultiplyPoint2d(Vector2.zero);
             var viewMax = _viewMatrixInv.MultiplyPoint2d(rectTransform.sizeDelta);
-            return new Bounds((viewMin + viewMax) / 2, viewMax - viewMin);
+            return new Rect(viewMin, viewMax - viewMin);
         }
 
-        private Vector2 GetGridCellSize(CurveLine line, Bounds viewBouns)
+        private Vector2 GetGridCellSize(CurveLine line, Rect viewBouns)
         {
             var viewMin = line.drawScale.inverse.Scale(viewBouns.min);
             var viewMax = line.drawScale.inverse.Scale(viewBouns.max);

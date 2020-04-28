@@ -97,21 +97,20 @@ namespace CurveEditor.UI
             lineColor = _colors.handleLineColor;
         }
 
-        public void PopulateMesh(VertexHelper vh, Matrix4x4 viewMatrix, Bounds viewBounds)
+        public void PopulateMesh(VertexHelper vh, Matrix4x4 viewMatrix, Rect viewBounds)
         {
             if (showHandles)
             {
-                var center = position + (_inHandlePosition + _outHandlePosition) / 2;
-                var size = _outHandlePosition.normalized * (_outHandlePosition.magnitude + _handleRadius)
-                         - _inHandlePosition.normalized * (_inHandlePosition.magnitude + _handleRadius);
+                var bounds = MathUtils.CenterSizeRect(position, 2 * Vector2.one * (_pointRadius + _pointSkin));
+                bounds = bounds.Encapsulate(MathUtils.CenterSizeRect(position + _inHandlePosition, 2 * Vector2.one * (_handleRadius + _handleSkin)));
+                bounds = bounds.Encapsulate(MathUtils.CenterSizeRect(position + _outHandlePosition, 2 * Vector2.one * (_handleRadius + _handleSkin)));
 
-                var bounds = new Bounds(center, new Vector2(Mathf.Abs(size.x), Mathf.Abs(size.y)));
-                if (!viewBounds.Intersects(bounds))
+                if (!viewBounds.Overlaps(bounds))
                     return;
             }
             else
             {
-                if (!viewBounds.Intersects(new Bounds(position, 2 * Vector2.one * _pointRadius)))
+                if (!viewBounds.Overlaps(new Rect(position - Vector2.one * _pointRadius, 2 * Vector2.one * _pointRadius)))
                     return;
             }
 
