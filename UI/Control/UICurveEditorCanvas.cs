@@ -72,7 +72,7 @@ namespace CurveEditor.UI
                     kv.Key.PopulateScrubberPoints(vh, _viewMatrix, viewBounds, kv.Value);
         }
 
-        private void PopulateGrid(VertexHelper vh, Bounds viewBounds, CurveLine line)
+        private void PopulateGrid(VertexHelper vh, Rect viewBounds, CurveLine line)
         {
             if (line == null)
                 return;
@@ -357,7 +357,7 @@ namespace CurveEditor.UI
                 }
             }
 
-            var valueBounds = new Bounds((valueMax + valueMin) / 2, valueMax - valueMin);
+            var valueBounds = new Rect(valueMin, valueMax - valueMin);
             var viewBounds = GetViewBounds();
 
             foreach (var line in _lines)
@@ -377,7 +377,7 @@ namespace CurveEditor.UI
             if (!_storableToLineMap.TryGetValue(storable, out line))
                 return;
 
-            var valueBounds = new Bounds((valueMax + valuMin) / 2, valueMax - valuMin);
+            var valueBounds = new Rect(valuMin, valueMax - valuMin);
             if (normalizeToView)
                 line.drawScale = DrawScaleOffset.FromViewNormalizedValueBounds(valueBounds, GetViewBounds());
             else
@@ -474,14 +474,14 @@ namespace CurveEditor.UI
             return true;
         }
 
-        private Bounds GetViewBounds()
+        private Rect GetViewBounds()
         {
             var viewMin = _viewMatrixInv.MultiplyPoint2d(Vector2.zero);
             var viewMax = _viewMatrixInv.MultiplyPoint2d(rectTransform.sizeDelta);
-            return new Bounds((viewMin + viewMax) / 2, viewMax - viewMin);
+            return new Rect(viewMin, viewMax - viewMin);
         }
 
-        private Vector2 GetGridCellSize(CurveLine line, Bounds viewBouns)
+        private Vector2 GetGridCellSize(CurveLine line, Rect viewBouns)
         {
             var viewMin = line.drawScale.inverse.Scale(viewBouns.min);
             var viewMax = line.drawScale.inverse.Scale(viewBouns.max);

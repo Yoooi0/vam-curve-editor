@@ -33,7 +33,7 @@ namespace CurveEditor.UI
             SetPointsFromCurve();
         }
 
-        public void PopulateMesh(VertexHelper vh, Matrix4x4 viewMatrix, Bounds viewBounds)
+        public void PopulateMesh(VertexHelper vh, Matrix4x4 viewMatrix, Rect viewBounds)
         {
             var min = _drawScale.inverse.Multiply(viewBounds.min);
             var max = _drawScale.inverse.Multiply(viewBounds.max);
@@ -51,7 +51,7 @@ namespace CurveEditor.UI
                 point.PopulateMesh(vh, viewMatrix, viewBounds);
         }
 
-        public void PopulateScrubberLine(VertexHelper vh, Matrix4x4 viewMatrix, Bounds viewBounds, float x)
+        public void PopulateScrubberLine(VertexHelper vh, Matrix4x4 viewMatrix, Rect viewBounds, float x)
         {
             var min = _drawScale.inverse.Multiply(viewBounds.min);
             var max = _drawScale.inverse.Multiply(viewBounds.max);
@@ -61,7 +61,7 @@ namespace CurveEditor.UI
             vh.AddLine(_drawScale.Multiply(new Vector2(x, min.y)), _drawScale.Multiply(new Vector2(x, max.y)), 0.02f, Color.black, viewMatrix);
         }
 
-        public void PopulateScrubberPoints(VertexHelper vh, Matrix4x4 viewMatrix, Bounds viewBounds, float x)
+        public void PopulateScrubberPoints(VertexHelper vh, Matrix4x4 viewMatrix, Rect viewBounds, float x)
         {
             var min = _drawScale.inverse.Multiply(viewBounds.min);
             var max = _drawScale.inverse.Multiply(viewBounds.max);

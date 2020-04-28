@@ -8,7 +8,7 @@ namespace CurveEditor.UI
         public Vector2 ratio { get; private set; } = new Vector2(1f, 1f);
         public DrawScaleOffset inverse => DrawScaleOffset.Inverse(this);
 
-        public static DrawScaleOffset FromValueBounds(Bounds valueBounds)
+        public static DrawScaleOffset FromValueBounds(Rect valueBounds)
         {
             Vector2 offset, ratio;
             offset.x = valueBounds.size.x < 0.0001f ? 0 : valueBounds.min.x;
@@ -19,7 +19,7 @@ namespace CurveEditor.UI
             return FromOffsetRatio(offset, ratio);
         }
 
-        public static DrawScaleOffset FromViewNormalizedValueBounds(Bounds valueBounds, Bounds viewBounds)
+        public static DrawScaleOffset FromViewNormalizedValueBounds(Rect valueBounds, Rect viewBounds)
         {
             Vector2 offset, ratio;
             offset.x = valueBounds.size.x < 0.0001f ? 0 : valueBounds.min.x * viewBounds.size.x;
