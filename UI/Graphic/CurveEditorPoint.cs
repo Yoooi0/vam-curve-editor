@@ -101,13 +101,10 @@ namespace CurveEditor.UI
         {
             if (showHandles)
             {
-                var center = position + (_inHandlePosition + _outHandlePosition) / 2;
-                var size = _outHandlePosition.normalized * (_outHandlePosition.magnitude + _handleRadius)
-                         - _inHandlePosition.normalized * (_inHandlePosition.magnitude + _handleRadius);
-                size.x = Mathf.Abs(size.x);
-                size.y = Mathf.Abs(size.y);
+                var bounds = MathUtils.CenterSizeRect(position, 2 * Vector2.one * (_pointRadius + _pointSkin));
+                bounds = bounds.Encapsulate(MathUtils.CenterSizeRect(position + _inHandlePosition, 2 * Vector2.one * (_handleRadius + _handleSkin)));
+                bounds = bounds.Encapsulate(MathUtils.CenterSizeRect(position + _outHandlePosition, 2 * Vector2.one * (_handleRadius + _handleSkin)));
 
-                var bounds = new Rect(center - size / 2, size);
                 if (!viewBounds.Overlaps(bounds))
                     return;
             }

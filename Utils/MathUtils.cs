@@ -26,5 +26,16 @@ namespace CurveEditor.Utils
 
         public static Vector2 MultiplyPoint2d(this Matrix4x4 m, Vector2 point) => m.MultiplyPoint3x4(point).xy();
         public static Vector2 MultiplyPoint2d(this Matrix4x4 m, Vector3 point) => m.MultiplyPoint3x4(point).xy();
+
+        public static Rect CenterSizeRect(Vector2 center, Vector2 size)
+            => new Rect(center - size / 2, size);
+
+        public static Rect Encapsulate(this Rect rect, Rect other)
+        {
+            var min = Vector2.Min(rect.min, other.min);
+            var max = Vector2.Max(rect.max, other.max);
+
+            return new Rect(min, max - min);
+        }
     }
 }
