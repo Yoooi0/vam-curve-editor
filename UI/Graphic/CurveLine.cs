@@ -1,5 +1,8 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using CurveEditor.Utils;
+using Leap.Unity;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -19,6 +22,7 @@ namespace CurveEditor.UI
             set { _drawScale = value; SetPointsFromCurve(); }
         }
 
+        public float precision { get; set; } = 0.01f;
         public float thickness { get; set; } = 0.04f;
         public int evaluateCount { get; set; } = 100;
         public AnimationCurve curve => _storable.val;
@@ -35,18 +39,74 @@ namespace CurveEditor.UI
 
         public void PopulateMesh(VertexHelper vh, Matrix4x4 viewMatrix, Rect viewBounds)
         {
+            //TODO: support WrapMode
+
+            var curvePoints = new List<Vector2>();
             var min = _drawScale.inverse.Multiply(viewBounds.min);
             var max = _drawScale.inverse.Multiply(viewBounds.max);
 
-            var curvePoints = new Vector2[evaluateCount];
+            var minKeyIndex = Array.FindLastIndex(curve.keys, k => k.time < min.x);
+            var maxKeyIndex = Array.FindIndex(curve.keys, k => k.time > max.x);
+
+            if (minKeyIndex < 0) minKeyIndex = 0;
+            if (maxKeyIndex < 0) maxKeyIndex = curve.length - 1;
+            var keyIndex = minKeyIndex;
+
             for (var i = 0; i < evaluateCount; i++)
             {
-                var x = Mathf.Lerp(min.x, max.x, (float)i / (evaluateCount - 1));
-                var y = curve.Evaluate(x);
-                curvePoints[i] = _drawScale.Multiply(new Vector2(x, y));
+                var count = curvePoints.Count;
+                var x = min.x + (max.x - min.x) * (i / (evaluateCount - 1f));
+                if (count > 0 && x <= curvePoints.Last().x)
+                    continue;
+
+                var curr = new Vector2(x, curve.Evaluate(x));
+                if(keyIndex >= minKeyIndex && keyIndex <= maxKeyIndex)
+                {
+                    var key = curve.keys[keyIndex];
+                    if (key.time < x)
+                    {
+                        if (float.IsInfinity(key.inTangent) && keyIndex - 1 >= 0)
+                        {
+                            var prev = curve.keys[keyIndex - 1];
+                            curvePoints.Add(new Vector2(key.time, prev.value));
+                        }
+
+                        curvePoints.Add(new Vector2(key.time, key.value));
+                        curvePoints.Add(curr);
+
+                        if (float.IsInfinity(key.outTangent) && keyIndex + 1 < curve.length)
+                        {
+                            var next = curve.keys[keyIndex + 1];
+                            var nextTime = Mathf.Min(max.x, next.time);
+                            curvePoints.Add(new Vector2(nextTime, key.value));
+                            curvePoints.Add(new Vector2(nextTime, next.value));
+                        }
+
+                        keyIndex++;
+                        continue;
+                    }
+                }
+
+                if (count < 2 || x >= max.x)
+                {
+                    curvePoints.Add(curr);
+                    continue;
+                }
+
+                var prev0 = curvePoints[count - 2];
+                var prev1 = curvePoints[count - 1];
+                var prevTangent = prev1 - prev0;
+                var currTangent = curr - prev1;
+                var prevNormal = prevTangent.Perpendicular().normalized;
+                var error = prevNormal * Vector2.Dot(prevNormal, currTangent);
+                
+                if (error.magnitude > precision)
+                    curvePoints.Add(curr);
             }
 
+            curvePoints = curvePoints.Select(p => _drawScale.Multiply(p)).ToList();
             vh.AddLine(curvePoints, thickness, _colors.lineColor, viewMatrix);
+
             foreach (var point in points)
                 point.PopulateMesh(vh, viewMatrix, viewBounds);
         }
