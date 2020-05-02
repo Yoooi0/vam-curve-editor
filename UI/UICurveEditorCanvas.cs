@@ -184,9 +184,9 @@ namespace CurveEditor.UI
         private void UpdateViewMatrix()
             => _viewMatrix = Matrix4x4.TRS(_cameraPosition + _dragTranslation, Quaternion.identity, new Vector3(_zoom, _zoom, 1));
 
-        public void CreateCurve(IStorableAnimationCurve storable, UICurveLineSettings settings = null)
+        public void CreateCurve(IStorableAnimationCurve storable, CurveLineSettings settings = null)
         {
-            var line = new CurveLine(storable, settings ?? UICurveLineSettings.Default());
+            var line = new CurveLine(storable, settings ?? CurveLineSettings.Default());
             _lines.Add(line);
             _scrubberPositions.Add(line, line.curve.keys.First().time);
             _storableToLineMap.Add(storable, line);

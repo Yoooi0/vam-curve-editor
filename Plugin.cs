@@ -64,9 +64,9 @@ namespace CurveEditor
             curveEditorButtons[3].button.onClick.AddListener(() => _curveEditor.SetLinear());
 
             _curveEditor = new UICurveEditor(container, 520, container.height, buttons: curveEditorButtons);
-            _curveEditor.AddCurve(_curve1JSON, UICurveLineSettings.Colorize(new Color(0.388f, 0.698f, 0.890f)));
+            _curveEditor.AddCurve(_curve1JSON, CurveLineSettings.Colorize(new Color(0.388f, 0.698f, 0.890f)));
             _curveEditor.SetValueBounds(_curve1JSON, new Rect(0, 0, 2, 10), true, true);
-            _curveEditor.AddCurve(_curve2JSON, UICurveLineSettings.Colorize(new Color(0.890f, 0.388f, 0.398f)));
+            _curveEditor.AddCurve(_curve2JSON, CurveLineSettings.Colorize(new Color(0.890f, 0.388f, 0.398f)));
             _curveEditor.SetValueBounds(_curve2JSON, new Rect(0, 0, 2, 1), true, true);
 
             var resetButton = CreateButton("Reset");

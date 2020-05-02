@@ -83,6 +83,8 @@
     <Compile Include="UI\DrawScaleOffset.cs" />
     <Compile Include="UI\CurveEditorPoint.cs" />
     <Compile Include="UI\CurveLine.cs" />
+    <Compile Include="UI\UICurveEditorSettings.cs" />
+    <Compile Include="UI\CurveLineSettings.cs" />
     <Compile Include="Utils\VertexHelperExtensions.cs" />
     <Compile Include="Utils\MathUtils.cs" />
   </ItemGroup>

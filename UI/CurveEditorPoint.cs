@@ -20,7 +20,7 @@ namespace CurveEditor.UI
         private Vector2 _inHandlePosition = Vector2.left * 0.5f;
 
         public CurveLine parent { get; private set; } = null;
-        public UICurveLineSettings settings { get; private set; }
+        public CurveLineSettings settings { get; private set; }
 
         public Vector2 position { get; set; } = Vector2.zero;
 
@@ -72,7 +72,7 @@ namespace CurveEditor.UI
             set { SetInHandlePosition(value); }
         }
 
-        public CurveEditorPoint(CurveLine parent, UICurveLineSettings settings)
+        public CurveEditorPoint(CurveLine parent, CurveLineSettings settings)
         {
             this.parent = parent;
             this.settings = settings;
