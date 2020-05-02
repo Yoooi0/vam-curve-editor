@@ -78,12 +78,12 @@
     <Compile Include="Plugin.cs" />
     <Compile Include="IStorableAnimationCurve.cs" />
     <Compile Include="JSONStorableAnimationCurve.cs" />
-    <Compile Include="UI\Control\UICurveEditorCanvas.cs" />
-    <Compile Include="UI\Control\UICurveEditor.cs" />
-    <Compile Include="UI\Graphic\DrawScaleOffset.cs" />
-    <Compile Include="UI\Graphic\CurveEditorPoint.cs" />
-    <Compile Include="UI\Graphic\CurveLine.cs" />
-    <Compile Include="UI\Graphic\VertexHelperExtensions.cs" />
+    <Compile Include="UI\UICurveEditorCanvas.cs" />
+    <Compile Include="UI\UICurveEditor.cs" />
+    <Compile Include="UI\DrawScaleOffset.cs" />
+    <Compile Include="UI\CurveEditorPoint.cs" />
+    <Compile Include="UI\CurveLine.cs" />
+    <Compile Include="Utils\VertexHelperExtensions.cs" />
     <Compile Include="Utils\MathUtils.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

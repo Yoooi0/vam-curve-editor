@@ -1,9 +1,8 @@
-using CurveEditor.Utils;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CurveEditor.UI
+namespace CurveEditor.Utils
 {
     public static class VertexHelperExtensions
     {
@@ -51,9 +50,9 @@ namespace CurveEditor.UI
             => vh.AddCircle(position, size * Mathf.Sqrt(2), color, viewMatrix, 4, 45);
 
         public static void AddLine(this VertexHelper vh, Vector2 from, Vector2 to, float thickness, Color color, Matrix4x4 viewMatrix)
-            => AddLine(vh, thickness, color, viewMatrix, from, to);
+            => vh.AddLine(thickness, color, viewMatrix, from, to);
         public static void AddLine(this VertexHelper vh, float thickness, Color color, Matrix4x4 viewMatrix, params Vector2[] points)
-            => AddLine(vh, points, thickness, color, viewMatrix);
+            => vh.AddLine(points, thickness, color, viewMatrix);
 
         public static void AddLine(this VertexHelper vh, IList<Vector2> points, float thickness, Color color, Matrix4x4 viewMatrix)
         {

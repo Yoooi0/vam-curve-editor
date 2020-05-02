@@ -4,8 +4,6 @@ namespace CurveEditor.UI
 {
     public class DrawScaleOffset
     {
-        private DrawScaleOffset drawScale;
-
         public DrawScaleOffset() { }
         public DrawScaleOffset(DrawScaleOffset drawScale) : this(drawScale.offset, drawScale.ratio) { }
 
