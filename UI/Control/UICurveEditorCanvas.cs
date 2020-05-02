@@ -17,9 +17,10 @@ namespace CurveEditor.UI
         private Vector2 _cameraPosition = Vector2.zero;
         private Vector2 _dragStartPosition = Vector2.zero;
         private Vector2 _dragTranslation = Vector2.zero;
+        private Matrix4x4 _viewMatrix = Matrix4x4.identity;
+
         private bool _showScrubbers = true;
         private bool _showGrid = true;
-        private Matrix4x4 _viewMatrix = Matrix4x4.identity;
         private Color _gridColor = new Color(0.6f, 0.6f, 0.6f);
         private Color _girdAxisColor = new Color(0.5f, 0.5f, 0.5f);
         private float _zoom = 100;
@@ -45,6 +46,40 @@ namespace CurveEditor.UI
         {
             get { return _showGrid; }
             set { _showGrid = value; SetVerticesDirty(); }
+        }
+
+        public Color gridColor
+        {
+            get { return _gridColor; }
+            set { _gridColor = value; SetMaterialDirty(); }
+        }
+
+        public Color gridAxisColor
+        {
+            get { return _girdAxisColor; }
+            set { _girdAxisColor = value; SetMaterialDirty(); }
+        }
+
+        public float zoom
+        {
+            get { return _zoom; }
+            set 
+            {
+                _zoom = value; 
+                UpdateViewMatrix();
+                SetVerticesDirty();
+            }
+        }
+
+        public Vector2 cameraPosition
+        {
+            get { return _cameraPosition; }
+            set
+            {
+                _cameraPosition = value;
+                UpdateViewMatrix();
+                SetVerticesDirty();
+            }
         }
 
         protected override void Awake()
@@ -133,9 +168,11 @@ namespace CurveEditor.UI
 
                     SetVerticesDirty();
                 }
+
                 if (Input.GetKeyDown(KeyCode.S))
                 {
-                    foreach (var line in _lines) { 
+                    foreach (var line in _lines)
+                    {
                         line.drawScale.Resize(0.5f);
                         line.SetPointsFromCurve();
                     }
@@ -152,6 +189,7 @@ namespace CurveEditor.UI
                     UpdateViewMatrix();
                     SetVerticesDirty();
                 }
+
                 if (Input.GetKeyDown(KeyCode.A))
                 {
                     _zoom -= 10f;
@@ -164,10 +202,9 @@ namespace CurveEditor.UI
         private void UpdateViewMatrix()
             => _viewMatrix = Matrix4x4.TRS(_cameraPosition + _dragTranslation, Quaternion.identity, new Vector3(_zoom, _zoom, 1));
 
-        public void CreateCurve(IStorableAnimationCurve storable, UICurveLineColors colors, float thickness)
+        public void CreateCurve(IStorableAnimationCurve storable, UICurveLineSettings settings = null)
         {
-            var line = new CurveLine(storable, colors);
-            line.thickness = thickness;
+            var line = new CurveLine(storable, settings ?? UICurveLineSettings.Default());
             _lines.Add(line);
             _scrubberPositions.Add(line, line.curve.keys.First().time);
             _storableToLineMap.Add(storable, line);

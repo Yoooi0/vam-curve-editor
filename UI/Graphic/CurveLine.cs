@@ -11,9 +11,11 @@ namespace CurveEditor.UI
     public class CurveLine
     {
         private readonly IStorableAnimationCurve _storable;
-        private readonly UICurveLineColors _colors;
+        private readonly UICurveLineSettings _settings;
+
         private CurveEditorPoint _selectedPoint;
         private DrawScaleOffset _drawScale = new DrawScaleOffset();
+
         public readonly List<CurveEditorPoint> points;
 
         public DrawScaleOffset drawScale
@@ -22,17 +24,14 @@ namespace CurveEditor.UI
             set { _drawScale = value; SetPointsFromCurve(); }
         }
 
-        public float precision { get; set; } = 0.01f;
-        public float thickness { get; set; } = 0.04f;
-        public int evaluateCount { get; set; } = 100;
         public AnimationCurve curve => _storable.val;
 
-        public CurveLine(IStorableAnimationCurve storable, UICurveLineColors colors = null)
+        public CurveLine(IStorableAnimationCurve storable, UICurveLineSettings settings)
         {
             points = new List<CurveEditorPoint>();
 
             _storable = storable;
-            _colors = colors ?? new UICurveLineColors();
+            _settings = settings;
 
             SetPointsFromCurve();
         }
@@ -40,6 +39,7 @@ namespace CurveEditor.UI
         public void PopulateMesh(VertexHelper vh, Matrix4x4 viewMatrix, Rect viewBounds)
         {
             //TODO: support WrapMode
+            //TODO: clip y
 
             var curvePoints = new List<Vector2>();
             var min = _drawScale.inverse.Multiply(viewBounds.min);
@@ -52,10 +52,10 @@ namespace CurveEditor.UI
             if (maxKeyIndex < 0) maxKeyIndex = curve.length - 1;
             var keyIndex = minKeyIndex;
 
-            for (var i = 0; i < evaluateCount; i++)
+            for (var i = 0; i < _settings.curveLineEvaluateCount; i++)
             {
                 var count = curvePoints.Count;
-                var x = min.x + (max.x - min.x) * (i / (evaluateCount - 1f));
+                var x = min.x + (max.x - min.x) * (i / (_settings.curveLineEvaluateCount - 1f));
                 var curr = _drawScale.Multiply(new Vector2(x, curve.Evaluate(x)));
                 if (count > 0 && curr.x <= curvePoints.Last().x)
                     continue;
@@ -100,11 +100,11 @@ namespace CurveEditor.UI
                 var prevNormal = prevTangent.Perpendicular().normalized;
                 var error = prevNormal * Vector2.Dot(prevNormal, currTangent);
 
-                if (error.magnitude > precision)
+                if (error.magnitude > _settings.curveLinePrecision)
                     curvePoints.Add(curr);
             }
 
-            vh.AddLine(curvePoints, thickness, _colors.lineColor, viewMatrix);
+            vh.AddLine(curvePoints, _settings.curveLineThickness, _settings.curveLineColor, viewMatrix);
 
             foreach (var point in points)
                 point.PopulateMesh(vh, viewMatrix, viewBounds);
@@ -243,7 +243,7 @@ namespace CurveEditor.UI
 
         public CurveEditorPoint CreatePoint(Vector2 position = new Vector2())
         {
-            var point = new CurveEditorPoint(this, _colors)
+            var point = new CurveEditorPoint(this, _settings)
             {
                 position = position
             };
@@ -284,6 +284,58 @@ namespace CurveEditor.UI
         {
             public int Compare(CurveEditorPoint x, CurveEditorPoint y)
                 => Comparer<float>.Default.Compare(x.position.x, y.position.x);
+        }
+    }
+
+    public class UICurveLineSettings
+    {
+        public Color pointDotColor = new Color(0.427f, 0.035f, 0.517f);
+        public Color pointDotColorSelected = new Color(0.682f, 0.211f, 0.788f);
+        public Color pointHandleLineColor = new Color(0, 0, 0);
+        public Color pointHandleLineColorFree = new Color(0.427f, 0.035f, 0.517f);
+        public Color pointHandleDotColor = new Color(0, 0, 0);
+        public Color pointHandleDotColorWeighted = new Color(0.427f, 0.035f, 0.517f);
+
+        public float pointDotRadius = 0.08f;
+        public float pointDotSkin = 0.04f;
+        public float pointHandleDotRadius = 0.07f;
+        public float pointHandleDotSkin = 0.04f;
+        public float pointShellSize = 0.2f;
+        public float pointHandleLineThickness = 0.03f;
+        public float defaultHandleLength = 0.5f;
+
+        public float curveLinePrecision = 0.01f;
+        public float curveLineThickness = 0.04f;
+        public int curveLineEvaluateCount = 100;
+        public Color curveLineColor = new Color(0.9f, 0.9f, 0.9f);
+        public Color scrubberColor = new Color(0.382f, 0.111f, 0.488f);
+
+        protected UICurveLineSettings() { }
+
+        public static UICurveLineSettings Default() => new UICurveLineSettings();
+        public static UICurveLineSettings Colorize(Color tint, UICurveLineSettings settings = null)
+        {
+            //TODO: proper palette generator
+
+            settings = settings ?? Default();
+
+            float h, s, v;
+            Color.RGBToHSV(tint, out h, out s, out v);
+
+            var darkColor = Color.HSVToRGB(h, s, v * 0.8f);
+            var veryDarkColor = Color.HSVToRGB(h, s, v * 0.5f);
+            var desaturatedColor = Color.HSVToRGB(h, s * 0.5f, 1);
+
+            settings.pointDotColor = darkColor;
+            settings.pointDotColorSelected = tint;
+            settings.pointHandleLineColor = veryDarkColor;
+            settings.pointHandleLineColorFree = darkColor;
+            settings.pointHandleDotColor = veryDarkColor;
+            settings.pointHandleDotColorWeighted = darkColor;
+            settings.curveLineColor = desaturatedColor;
+            settings.scrubberColor = Color.HSVToRGB(h, s * 1.2f, v * 0.9f);
+
+            return settings;
         }
     }
 }

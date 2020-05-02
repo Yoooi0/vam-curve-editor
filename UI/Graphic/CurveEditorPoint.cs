@@ -6,14 +6,8 @@ namespace CurveEditor.UI
 {
     public class CurveEditorPoint
     {
-        private readonly UICurveLineColors _colors; //TODO: just point colors
+        private readonly UICurveLineSettings _settings;
 
-        private float _pointRadius = 0.08f;
-        private float _pointSkin = 0.04f;
-        private float _handleRadius = 0.07f;
-        private float _handleSkin = 0.04f;
-        private float _shellSize = 0.2f;
-        private float _handleThickness = 0.03f;
         private float _outHandleLength = 0.5f;
         private float _inHandleLength = 0.5f;
         private bool _isDraggingPoint = false;
@@ -26,10 +20,6 @@ namespace CurveEditor.UI
 
         private Vector2 _outHandlePosition = Vector2.right * 0.5f;
         private Vector2 _inHandlePosition = Vector2.left * 0.5f;
-        private Color pointColor = new Color(1, 1, 1);
-        private Color lineColor = new Color(0.5f, 0.5f, 0.5f);
-        private Color inHandleColor = new Color(0, 0, 0);
-        private Color outHandleColor = new Color(0, 0, 0);
 
         public CurveLine parent { get; private set; } = null;
 
@@ -37,29 +27,25 @@ namespace CurveEditor.UI
         public bool showHandles
         {
             get { return _showHandles; }
-            set
-            {
-                _showHandles = value;
-                pointColor = _showHandles ? _colors.selectedPointColor : _colors.pointColor;
-            }
+            set { _showHandles = value; }
         }
 
         public int handleMode
         {
             get { return _handleMode; }
-            set { SetHandleMode(value); }
+            set { _handleMode = value; SetOutHandlePosition(_outHandlePosition); }
         }
 
         public int inHandleMode
         {
             get { return _inHandleMode; }
-            set { SetInHandleMode(value); }
+            set { _inHandleMode = value; SetInHandlePosition(_inHandlePosition); }
         }
 
         public int outHandleMode
         {
             get { return _outHandleMode; }
-            set { SetOutHandleMode(value); }
+            set { _outHandleMode = value; SetOutHandlePosition(_outHandlePosition); }
         }
 
         public float outHandleLength
@@ -86,52 +72,53 @@ namespace CurveEditor.UI
             set { SetInHandlePosition(value); }
         }
 
-        public CurveEditorPoint(CurveLine parent, UICurveLineColors colors = null)
+        public CurveEditorPoint(CurveLine parent, UICurveLineSettings settings)
         {
             this.parent = parent;
-            _colors = colors ?? new UICurveLineColors();
-
-            pointColor = _colors.pointColor;
-            inHandleColor = _colors.inHandleColor;
-            outHandleColor = _colors.outHandleColor;
-            lineColor = _colors.handleLineColor;
+            _settings = settings;
+            _inHandleLength = _settings.defaultHandleLength;
+            _outHandleLength = _settings.defaultHandleLength;
         }
 
         public void PopulateMesh(VertexHelper vh, Matrix4x4 viewMatrix, Rect viewBounds)
         {
+            var pointColor = _showHandles ? _settings.pointDotColorSelected : _settings.pointDotColor;
+            var lineColor = _handleMode == 0 ? _settings.pointHandleLineColor : _settings.pointHandleLineColorFree;
+            var handleColor = _outHandleMode == 0 ? _settings.pointHandleDotColor : _settings.pointHandleDotColorWeighted;
+
             if (showHandles)
             {
-                var bounds = MathUtils.CenterSizeRect(position, 2 * Vector2.one * (_pointRadius + _pointSkin));
-                bounds = bounds.Encapsulate(MathUtils.CenterSizeRect(position + _inHandlePosition, 2 * Vector2.one * (_handleRadius + _handleSkin)));
-                bounds = bounds.Encapsulate(MathUtils.CenterSizeRect(position + _outHandlePosition, 2 * Vector2.one * (_handleRadius + _handleSkin)));
+                var bounds = MathUtils.CenterSizeRect(position, 2 * Vector2.one * (_settings.pointDotRadius + _settings.pointDotSkin));
+                bounds = bounds.Encapsulate(MathUtils.CenterSizeRect(position + _inHandlePosition, 2 * Vector2.one * (_settings.pointHandleDotRadius + _settings.pointHandleDotSkin)));
+                bounds = bounds.Encapsulate(MathUtils.CenterSizeRect(position + _outHandlePosition, 2 * Vector2.one * (_settings.pointHandleDotRadius + _settings.pointHandleDotSkin)));
 
                 if (!viewBounds.Overlaps(bounds))
                     return;
             }
             else
             {
-                if (!viewBounds.Overlaps(new Rect(position - Vector2.one * _pointRadius, 2 * Vector2.one * _pointRadius)))
+                if (!viewBounds.Overlaps(new Rect(position - Vector2.one * _settings.pointDotRadius, 2 * Vector2.one * _settings.pointDotRadius)))
                     return;
             }
 
             if (showHandles)
             {
-                vh.AddLine(position, position + _outHandlePosition, _handleThickness, lineColor, viewMatrix);
-                vh.AddLine(position, position + _inHandlePosition, _handleThickness, lineColor, viewMatrix);
+                vh.AddLine(position, position + _outHandlePosition, _settings.pointHandleLineThickness, lineColor, viewMatrix);
+                vh.AddLine(position, position + _inHandlePosition, _settings.pointHandleLineThickness, lineColor, viewMatrix);
             }
 
-            vh.AddCircle(position, _pointRadius, pointColor, viewMatrix);
+            vh.AddCircle(position, _settings.pointDotRadius, pointColor, viewMatrix);
 
             if (showHandles)
             {
-                vh.AddCircle(position + _outHandlePosition, _handleRadius, outHandleColor, viewMatrix);
-                vh.AddCircle(position + _inHandlePosition, _handleRadius, inHandleColor, viewMatrix);
+                vh.AddCircle(position + _outHandlePosition, _settings.pointHandleDotRadius, handleColor, viewMatrix);
+                vh.AddCircle(position + _inHandlePosition, _settings.pointHandleDotRadius, handleColor, viewMatrix);
             }
         }
 
         public bool OnBeginDrag(Vector2 point)
         {
-            if (Vector2.Distance(point, position) <= _pointRadius + _pointSkin)
+            if (Vector2.Distance(point, position) <= _settings.pointDotRadius + _settings.pointDotSkin)
             {
                 _isDraggingPoint = true;
                 position = point;
@@ -139,12 +126,12 @@ namespace CurveEditor.UI
 
             if (showHandles)
             {
-                if (Vector3.Distance(point, position + _outHandlePosition) <= _handleRadius + _handleSkin)
+                if (Vector3.Distance(point, position + _outHandlePosition) <= _settings.pointHandleDotRadius + _settings.pointHandleDotSkin)
                 {
                     _isDraggingOutHandle = true;
                     SetOutHandlePosition(point - position);
                 }
-                else if (Vector2.Distance(point, position + _inHandlePosition) <= _handleRadius + _handleSkin)
+                else if (Vector2.Distance(point, position + _inHandlePosition) <= _settings.pointHandleDotRadius + _settings.pointHandleDotSkin)
                 {
                     _isDraggingInHandle = true;
                     SetInHandlePosition(point - position);
@@ -180,36 +167,14 @@ namespace CurveEditor.UI
 
         public bool OnPointerClick(Vector2 point)
         {
-            if (Vector2.Distance(point, position) <= _pointRadius + _pointSkin) return true;
+            if (Vector2.Distance(point, position) <= _settings.pointDotRadius + _settings.pointDotSkin) return true;
 
             if (!showHandles) return false;
-            if (Vector2.Distance(point, position + _outHandlePosition) <= _handleRadius + _handleSkin) return true;
-            if (Vector2.Distance(point, position + _inHandlePosition) <= _handleRadius + _handleSkin) return true;
+            if (Vector2.Distance(point, position + _outHandlePosition) <= _settings.pointHandleDotRadius + _settings.pointHandleDotSkin) return true;
+            if (Vector2.Distance(point, position + _inHandlePosition) <= _settings.pointHandleDotRadius + _settings.pointHandleDotSkin) return true;
 
             return !IsPositionOutsideShell(point);
         }
-
-        private void SetHandleMode(int mode)
-        {
-            _handleMode = mode;
-            lineColor = mode == 0 ? _colors.handleLineColor : _colors.handleLineColorFree;
-            SetOutHandlePosition(_outHandlePosition);
-        }
-
-        private void SetOutHandleMode(int mode)
-        {
-            _outHandleMode = mode;
-            outHandleColor = mode == 0 ? _colors.outHandleColor : _colors.outHandleColorWeighted;
-            SetOutHandlePosition(_outHandlePosition);
-        }
-
-        private void SetInHandleMode(int mode)
-        {
-            _inHandleMode = mode;
-            inHandleColor = mode == 0 ? _colors.inHandleColor : _colors.inHandleColorWeighted;
-            SetInHandlePosition(_inHandlePosition);
-        }
-
 
         private void SetOutHandlePosition(Vector2 handlePosition)
         {
@@ -245,8 +210,8 @@ namespace CurveEditor.UI
 
         public bool IsPositionOutsideShell(Vector2 point)
         {
-            return MathUtils.DistanceToLine(point, position, position + _inHandlePosition) > _shellSize
-                && MathUtils.DistanceToLine(point, position, position + _outHandlePosition) > _shellSize;
+            return MathUtils.DistanceToLine(point, position, position + _inHandlePosition) > _settings.pointShellSize
+                && MathUtils.DistanceToLine(point, position, position + _outHandlePosition) > _settings.pointShellSize;
         }
     }
 }

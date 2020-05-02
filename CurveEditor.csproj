@@ -1,6 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" 
-  xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
     <TargetFramework>net45</TargetFramework>
@@ -83,7 +82,6 @@
     <Compile Include="UI\Control\UICurveEditor.cs" />
     <Compile Include="UI\Graphic\DrawScaleOffset.cs" />
     <Compile Include="UI\Graphic\CurveEditorPoint.cs" />
-    <Compile Include="UI\Control\UIColors.cs" />
     <Compile Include="UI\Graphic\CurveLine.cs" />
     <Compile Include="UI\Graphic\VertexHelperExtensions.cs" />
     <Compile Include="Utils\MathUtils.cs" />

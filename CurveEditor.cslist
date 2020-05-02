@@ -1,7 +1,6 @@
 Plugin.cs
 IStorableAnimationCurve.cs
 JSONStorableAnimationCurve.cs
-UI\Control\UIColors.cs
 UI\Control\UICurveEditor.cs
 UI\Control\UICurveEditorCanvas.cs
 UI\Graphic\DrawScaleOffset.cs
