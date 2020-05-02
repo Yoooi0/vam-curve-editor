@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using CurveEditor.Utils;
 using Leap.Unity;
@@ -11,27 +12,27 @@ namespace CurveEditor.UI
     public class CurveLine
     {
         private readonly IStorableAnimationCurve _storable;
-        private readonly UICurveLineSettings _settings;
 
         private CurveEditorPoint _selectedPoint;
         private DrawScaleOffset _drawScale = new DrawScaleOffset();
 
         public readonly List<CurveEditorPoint> points;
 
+        public UICurveLineSettings settings { get; private set; }
+        public AnimationCurve curve => _storable.val;
+        
         public DrawScaleOffset drawScale
         {
             get { return _drawScale; }
             set { _drawScale = value; SetPointsFromCurve(); }
         }
 
-        public AnimationCurve curve => _storable.val;
-
         public CurveLine(IStorableAnimationCurve storable, UICurveLineSettings settings)
         {
             points = new List<CurveEditorPoint>();
 
             _storable = storable;
-            _settings = settings;
+            this.settings = settings;
 
             SetPointsFromCurve();
         }
@@ -52,10 +53,10 @@ namespace CurveEditor.UI
             if (maxKeyIndex < 0) maxKeyIndex = curve.length - 1;
             var keyIndex = minKeyIndex;
 
-            for (var i = 0; i < _settings.curveLineEvaluateCount; i++)
+            for (var i = 0; i < settings.curveLineEvaluateCount; i++)
             {
                 var count = curvePoints.Count;
-                var x = min.x + (max.x - min.x) * (i / (_settings.curveLineEvaluateCount - 1f));
+                var x = min.x + (max.x - min.x) * (i / (settings.curveLineEvaluateCount - 1f));
                 var curr = _drawScale.Multiply(new Vector2(x, curve.Evaluate(x)));
                 if (count > 0 && curr.x <= curvePoints.Last().x)
                     continue;
@@ -100,11 +101,11 @@ namespace CurveEditor.UI
                 var prevNormal = prevTangent.Perpendicular().normalized;
                 var error = prevNormal * Vector2.Dot(prevNormal, currTangent);
 
-                if (error.magnitude > _settings.curveLinePrecision)
+                if (error.magnitude > settings.curveLinePrecision)
                     curvePoints.Add(curr);
             }
 
-            vh.AddLine(curvePoints, _settings.curveLineThickness, _settings.curveLineColor, viewMatrix);
+            vh.AddLine(curvePoints, settings.curveLineThickness, settings.curveLineColor, viewMatrix);
 
             foreach (var point in points)
                 point.PopulateMesh(vh, viewMatrix, viewBounds);
@@ -243,7 +244,7 @@ namespace CurveEditor.UI
 
         public CurveEditorPoint CreatePoint(Vector2 position = new Vector2())
         {
-            var point = new CurveEditorPoint(this, _settings)
+            var point = new CurveEditorPoint(this, settings)
             {
                 position = position
             };
@@ -287,28 +288,28 @@ namespace CurveEditor.UI
         }
     }
 
-    public class UICurveLineSettings
+    public class UICurveLineSettings : INotifyPropertyChanged
     {
-        public Color pointDotColor = new Color(0.427f, 0.035f, 0.517f);
-        public Color pointDotColorSelected = new Color(0.682f, 0.211f, 0.788f);
-        public Color pointHandleLineColor = new Color(0, 0, 0);
-        public Color pointHandleLineColorFree = new Color(0.427f, 0.035f, 0.517f);
-        public Color pointHandleDotColor = new Color(0, 0, 0);
-        public Color pointHandleDotColorWeighted = new Color(0.427f, 0.035f, 0.517f);
+        private Color _pointDotColor = new Color(0.427f, 0.035f, 0.517f);
+        private Color _pointDotColorSelected = new Color(0.682f, 0.211f, 0.788f);
+        private Color _pointHandleLineColor = new Color(0, 0, 0);
+        private Color _pointHandleLineColorFree = new Color(0.427f, 0.035f, 0.517f);
+        private Color _pointHandleDotColor = new Color(0, 0, 0);
+        private Color _pointHandleDotColorWeighted = new Color(0.427f, 0.035f, 0.517f);
 
-        public float pointDotRadius = 0.08f;
-        public float pointDotSkin = 0.04f;
-        public float pointHandleDotRadius = 0.07f;
-        public float pointHandleDotSkin = 0.04f;
-        public float pointShellSize = 0.2f;
-        public float pointHandleLineThickness = 0.03f;
-        public float defaultHandleLength = 0.5f;
+        private float _pointDotRadius = 0.08f;
+        private float _pointDotSkin = 0.04f;
+        private float _pointHandleDotRadius = 0.07f;
+        private float _pointHandleDotSkin = 0.04f;
+        private float _pointShellSize = 0.2f;
+        private float _pointHandleLineThickness = 0.03f;
+        private float _defaultHandleLength = 0.5f;
 
-        public float curveLinePrecision = 0.01f;
-        public float curveLineThickness = 0.04f;
-        public int curveLineEvaluateCount = 100;
-        public Color curveLineColor = new Color(0.9f, 0.9f, 0.9f);
-        public Color scrubberColor = new Color(0.382f, 0.111f, 0.488f);
+        private float _curveLinePrecision = 0.01f;
+        private float _curveLineThickness = 0.04f;
+        private int _curveLineEvaluateCount = 100;
+        private Color _curveLineColor = new Color(0.9f, 0.9f, 0.9f);
+        private Color _scrubberColor = new Color(0.382f, 0.111f, 0.488f);
 
         protected UICurveLineSettings() { }
 
@@ -337,6 +338,43 @@ namespace CurveEditor.UI
 
             return settings;
         }
+
+        #region INotifyPropertyChanged
+        public Color pointDotColor { get { return _pointDotColor; } set { Set(ref _pointDotColor, value, nameof(pointDotColor)); } }
+        public Color pointDotColorSelected { get { return _pointDotColorSelected; } set { Set(ref _pointDotColorSelected, value, nameof(pointDotColorSelected)); } }
+        public Color pointHandleLineColor { get { return _pointHandleLineColor; } set { Set(ref _pointHandleLineColor, value, nameof(pointHandleLineColor)); } }
+        public Color pointHandleLineColorFree { get { return _pointHandleLineColorFree; } set { Set(ref _pointHandleLineColorFree, value, nameof(pointHandleLineColorFree)); } }
+        public Color pointHandleDotColor { get { return _pointHandleDotColor; } set { Set(ref _pointHandleDotColor, value, nameof(pointHandleDotColor)); } }
+        public Color pointHandleDotColorWeighted { get { return _pointHandleDotColorWeighted; } set { Set(ref _pointHandleDotColorWeighted, value, nameof(pointHandleDotColorWeighted)); } }
+
+        public float pointDotRadius { get { return _pointDotRadius; } set { Set(ref _pointDotRadius, value, nameof(pointDotRadius)); } }
+        public float pointDotSkin { get { return _pointDotSkin; } set { Set(ref _pointDotSkin, value, nameof(pointDotSkin)); } }
+        public float pointHandleDotRadius { get { return _pointHandleDotRadius; } set { Set(ref _pointHandleDotRadius, value, nameof(pointHandleDotRadius)); } }
+        public float pointHandleDotSkin { get { return _pointHandleDotSkin; } set { Set(ref _pointHandleDotSkin, value, nameof(pointHandleDotSkin)); } }
+        public float pointShellSize { get { return _pointShellSize; } set { Set(ref _pointShellSize, value, nameof(pointShellSize)); } }
+        public float pointHandleLineThickness { get { return _pointHandleLineThickness; } set { Set(ref _pointHandleLineThickness, value, nameof(pointHandleLineThickness)); } }
+        public float defaultHandleLength { get { return _defaultHandleLength; } set { Set(ref _defaultHandleLength, value, nameof(defaultHandleLength)); } }
+
+        public float curveLinePrecision { get { return _curveLinePrecision; } set { Set(ref _curveLinePrecision, value, nameof(curveLinePrecision)); } }
+        public float curveLineThickness { get { return _curveLineThickness; } set { Set(ref _curveLineThickness, value, nameof(curveLineThickness)); } }
+        public int curveLineEvaluateCount { get { return _curveLineEvaluateCount; } set { Set(ref _curveLineEvaluateCount, value, nameof(curveLineEvaluateCount)); } }
+        public Color curveLineColor { get { return _curveLineColor; } set { Set(ref _curveLineColor, value, nameof(curveLineColor)); } }
+        public Color scrubberColor { get { return _scrubberColor; } set { Set(ref _scrubberColor, value, nameof(scrubberColor)); } }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected virtual void OnPropertyChanged(string propertyName)
+            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+
+        protected bool Set<T>(ref T field, T value, string propertyName)
+        {
+            if (EqualityComparer<T>.Default.Equals(field, value))
+                return false;
+
+            field = value;
+            OnPropertyChanged(propertyName);
+            return true;
+        }
+        #endregion
     }
 }
 

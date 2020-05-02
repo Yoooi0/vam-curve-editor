@@ -96,11 +96,11 @@ namespace CurveEditor
 
             var readOnlyStorable = new JSONStorableBool("ReadOnly", false);
             var readOnlyToggle = CreateToggle(readOnlyStorable);
-            readOnlyStorable.setCallbackFunction = v => _curveEditor.readOnly = v;
+            readOnlyStorable.setCallbackFunction = v => _curveEditor.settings.readOnly = v;
 
             var showScrubberStorable = new JSONStorableBool("Show Scrubbers", true);
             var showScrubberToggle = CreateToggle(showScrubberStorable);
-            showScrubberStorable.setCallbackFunction = v => _curveEditor.showScrubbers = v;
+            showScrubberStorable.setCallbackFunction = v => _curveEditor.settings.showScrubbers = v;
 
             var scrubberSliderStorable = new JSONStorableFloat("Scrubber time", 0, 0, 2);
             var scrubberSlider = CreateSlider(scrubberSliderStorable);

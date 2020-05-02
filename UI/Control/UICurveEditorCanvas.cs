@@ -1,6 +1,8 @@
 ﻿using CurveEditor.Utils;
 using Leap.Unity.Swizzle;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -13,52 +15,32 @@ namespace CurveEditor.UI
         private readonly List<CurveLine> _lines = new List<CurveLine>();
         private readonly Dictionary<CurveLine, float> _scrubberPositions = new Dictionary<CurveLine, float>();
         private readonly Dictionary<IStorableAnimationCurve, CurveLine> _storableToLineMap = new Dictionary<IStorableAnimationCurve, CurveLine>();
+        private UICurveEditorSettings _settings;
 
         private Vector2 _cameraPosition = Vector2.zero;
         private Vector2 _dragStartPosition = Vector2.zero;
         private Vector2 _dragTranslation = Vector2.zero;
         private Matrix4x4 _viewMatrix = Matrix4x4.identity;
-
-        private bool _showScrubbers = true;
-        private bool _showGrid = true;
-        private Color _gridColor = new Color(0.6f, 0.6f, 0.6f);
-        private Color _girdAxisColor = new Color(0.5f, 0.5f, 0.5f);
         private float _zoom = 100;
 
         private bool _isCtrlDown, _isShiftDown, _isAltDown;
 
         private Matrix4x4 _viewMatrixInv => _viewMatrix.inverse;
 
+        public UICurveEditorSettings settings
+        {
+            get { return _settings; }
+            set
+            {
+                if (_settings != null)
+                    _settings.PropertyChanged -= OnSettingsChanged;
+
+                _settings = value;
+                _settings.PropertyChanged += OnSettingsChanged;
+            }
+        }
+
         public CurveEditorPoint selectedPoint { get; private set; } = null;
-        public bool allowViewDragging { get; set; } = true;
-        public bool allowViewZooming { get; set; } = true;
-        public bool allowViewScaling { get; set; } = true;
-        public bool allowKeyboardShortcuts { get; set; } = true;
-        public bool readOnly { get; set; } = false;
-
-        public bool showScrubbers
-        {
-            get { return _showScrubbers; }
-            set { _showScrubbers = value; SetVerticesDirty(); }
-        }
-
-        public bool showGrid
-        {
-            get { return _showGrid; }
-            set { _showGrid = value; SetVerticesDirty(); }
-        }
-
-        public Color gridColor
-        {
-            get { return _gridColor; }
-            set { _gridColor = value; SetMaterialDirty(); }
-        }
-
-        public Color gridAxisColor
-        {
-            get { return _girdAxisColor; }
-            set { _girdAxisColor = value; SetMaterialDirty(); }
-        }
 
         public float zoom
         {
@@ -93,17 +75,17 @@ namespace CurveEditor.UI
             vh.Clear();
 
             var viewBounds = GetViewBounds();
-            if (_showGrid && _lines.Count > 0)
+            if (settings.showGrid && _lines.Count > 0)
                 PopulateGrid(vh, viewBounds, _lines.Last());
 
-            if (_showScrubbers)
+            if (settings.showScrubbers)
                 foreach (var kv in _scrubberPositions)
                     kv.Key.PopulateScrubberLine(vh, _viewMatrix, viewBounds, kv.Value);
 
             foreach (var line in _lines)
                 line.PopulateMesh(vh, _viewMatrix, viewBounds);
 
-            if (_showScrubbers)
+            if (settings.showScrubbers)
                 foreach (var kv in _scrubberPositions)
                     kv.Key.PopulateScrubberPoints(vh, _viewMatrix, viewBounds, kv.Value);
         }
@@ -124,16 +106,16 @@ namespace CurveEditor.UI
 
             if ((maxX - minX) / cellSize.x < 100)
                 for (var x = minX; x <= maxX; x += cellSize.x)
-                    vh.AddLine(new Vector2(x, viewMin.y), new Vector2(x, viewMax.y), 0.01f, _gridColor, _viewMatrix);
+                    vh.AddLine(new Vector2(x, viewMin.y), new Vector2(x, viewMax.y), settings.gridThickness, settings.gridColor, _viewMatrix);
 
             if ((maxY - minY) / cellSize.x < 100)
                 for (var y = minY; y <= maxY; y += cellSize.y)
-                    vh.AddLine(new Vector2(viewMin.x, y), new Vector2(viewMax.x, y), 0.01f, _gridColor, _viewMatrix);
+                    vh.AddLine(new Vector2(viewMin.x, y), new Vector2(viewMax.x, y), settings.gridThickness, settings.gridColor, _viewMatrix);
 
             if (viewMin.y < 0 && viewMax.y > 0)
-                vh.AddLine(new Vector2(viewMin.x, 0), new Vector2(viewMax.x, 0), 0.04f, _girdAxisColor, _viewMatrix);
+                vh.AddLine(new Vector2(viewMin.x, 0), new Vector2(viewMax.x, 0), settings.gridAxisThickness, settings.gridAxisColor, _viewMatrix);
             if (viewMin.x < 0 && viewMax.x > 0)
-                vh.AddLine(new Vector2(0, viewMin.y), new Vector2(0, viewMax.y), 0.04f, _girdAxisColor, _viewMatrix);
+                vh.AddLine(new Vector2(0, viewMin.y), new Vector2(0, viewMax.y), settings.gridAxisThickness, settings.gridAxisColor, _viewMatrix);
         }
 
         protected void Update()
@@ -142,12 +124,12 @@ namespace CurveEditor.UI
             _isShiftDown = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
             _isAltDown = Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt) || Input.GetKey(KeyCode.AltGr);
 
-            if (!allowKeyboardShortcuts)
+            if (!settings.allowKeyboardShortcuts)
                 return;
 
             if (selectedPoint != null)
             {
-                if (!readOnly && Input.GetKeyDown(KeyCode.Delete))
+                if (!settings.readOnly && Input.GetKeyDown(KeyCode.Delete))
                 {
                     selectedPoint.parent.DestroyPoint(selectedPoint);
                     selectedPoint.parent.SetCurveFromPoints();
@@ -156,7 +138,7 @@ namespace CurveEditor.UI
                 }
             }
 
-            if (allowViewScaling)
+            if (settings.allowViewScaling)
             {
                 if (Input.GetKeyDown(KeyCode.W))
                 {
@@ -181,7 +163,7 @@ namespace CurveEditor.UI
                 }
             }
 
-            if (allowViewZooming)
+            if (settings.allowViewZooming)
             {
                 if (Input.GetKeyDown(KeyCode.Q))
                 {
@@ -272,7 +254,7 @@ namespace CurveEditor.UI
                 return;
             }
 
-            if (allowViewDragging)
+            if (settings.allowViewDragging)
             {
                 _dragStartPosition = localPoint;
             }
@@ -286,7 +268,7 @@ namespace CurveEditor.UI
 
             var position = _viewMatrixInv.MultiplyPoint2d(localPoint);
             var viewBounds = GetViewBounds();
-            if (!allowViewDragging)
+            if (!settings.allowViewDragging)
             {
                 position.x = Mathf.Clamp(position.x, viewBounds.min.x, viewBounds.max.x);
                 position.y = Mathf.Clamp(position.y, viewBounds.min.y, viewBounds.max.y);
@@ -309,7 +291,7 @@ namespace CurveEditor.UI
                 }
             }
 
-            if (allowViewDragging)
+            if (settings.allowViewDragging)
             {
                 _dragTranslation = localPoint - _dragStartPosition;
                 UpdateViewMatrix();
@@ -331,7 +313,7 @@ namespace CurveEditor.UI
                 return;
             }
 
-            if (allowViewDragging)
+            if (settings.allowViewDragging)
             {
                 _cameraPosition += _dragTranslation;
                 _dragTranslation = Vector2.zero;
@@ -373,6 +355,12 @@ namespace CurveEditor.UI
             }
 
             SetSelectedPoint(null);
+        }
+
+        private void OnSettingsChanged(object sender, PropertyChangedEventArgs e)
+        {
+            //TODO: not everything needs a redraw
+            SetVerticesDirty();
         }
 
         public void SetViewToFit(Vector4 margin = new Vector4())
@@ -528,8 +516,7 @@ namespace CurveEditor.UI
             var viewMin = line.drawScale.inverse.Scale(viewBouns.min);
             var viewMax = line.drawScale.inverse.Scale(viewBouns.max);
 
-            var stepCount = 10;
-            var roughStep = (viewMax - viewMin) / (stepCount - 1);
+            var roughStep = (viewMax - viewMin) / (settings.gridCellCount - 1);
 
             var stepPower = new Vector2(
                 Mathf.Pow(2, -Mathf.Floor(Mathf.Log(Mathf.Abs(roughStep.x), 2))),
