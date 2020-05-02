@@ -7,9 +7,9 @@ namespace CurveEditor.UI
 {
     public static class VertexHelperExtensions
     {
-        public static void AddUIVertexQuad(this VertexHelper vh, Vector2[] vertices, Color color, Matrix4x4 viewMatrix)
+        private static UIVertex[] CreateVBO(Color color, Matrix4x4 viewMatrix, params Vector2[] vertices)
         {
-            var vbo = new UIVertex[4];
+            var vbo = new UIVertex[vertices.Length];
             for (var i = 0; i < vertices.Length; i++)
             {
                 var vert = UIVertex.simpleVert;
@@ -18,21 +18,37 @@ namespace CurveEditor.UI
                 vbo[i] = vert;
             }
 
-            vh.AddUIVertexQuad(vbo);
+            return vbo;
         }
 
-        public static void AddCircle(this VertexHelper vh, Vector2 position, float radius, Color color, Matrix4x4 viewMatrix)
-        {
-            const int segments = 6;
+        public static void AddUIVertexQuad(this VertexHelper vh, Vector2 a, Vector2 b, Vector2 c, Vector2 d, Color color, Matrix4x4 viewMatrix)
+            => vh.AddUIVertexQuad(CreateVBO(color, viewMatrix, a, b, c, d));
 
-            var prev = position;
-            for (var i = 0; i < segments + 1; i++)
+        public static void AddUIVertexTriangle(this VertexHelper vh, Vector2 a, Vector2 b, Vector2 c, Color color, Matrix4x4 viewMatrix)
+        {
+            var count = vh.currentVertCount;
+            foreach (var v in CreateVBO(color, viewMatrix, a, b, c))
+                vh.AddVert(v);
+
+            vh.AddTriangle(count, count + 1, count + 2);
+        }
+
+        public static void AddCircle(this VertexHelper vh, Vector2 position, float radius, Color color, Matrix4x4 viewMatrix, int segments = 6, float rotation = 0)
+        {
+            if (segments < 3)
+                return;
+
+            var vo = position + MathUtils.VectorFromAngle(Mathf.Deg2Rad * rotation) * radius;
+            for (int i = 1, j = 2; j < segments; i = j++)
             {
-                var curr = position + MathUtils.VectorFromAngle(Mathf.Deg2Rad * (i * (360f / segments))) * radius;
-                vh.AddUIVertexQuad(new[] { prev, curr, position, position }, color, viewMatrix);
-                prev = curr;
+                var vi = position + MathUtils.VectorFromAngle(Mathf.Deg2Rad * (rotation + i * (360f / segments))) * radius;
+                var vj = position + MathUtils.VectorFromAngle(Mathf.Deg2Rad * (rotation + j * (360f / segments))) * radius;
+                vh.AddUIVertexTriangle(vo, vi, vj, color, viewMatrix);
             }
         }
+
+        public static void AddSquare(this VertexHelper vh, Vector2 position, float size, Color color, Matrix4x4 viewMatrix)
+            => vh.AddCircle(position, size * Mathf.Sqrt(2), color, viewMatrix, 4, 45);
 
         public static void AddLine(this VertexHelper vh, Vector2 from, Vector2 to, float thickness, Color color, Matrix4x4 viewMatrix)
             => AddLine(vh, thickness, color, viewMatrix, from, to);
@@ -60,7 +76,7 @@ namespace CurveEditor.UI
                 v3 = MathUtils.RotatePointAroundPivot(v3, curr, angle);
                 v4 = MathUtils.RotatePointAroundPivot(v4, curr, angle);
 
-                vh.AddUIVertexQuad(new[] { v1, v2, v3, v4 }, color, viewMatrix);
+                vh.AddUIVertexQuad(v1, v2, v3, v4, color, viewMatrix);
             }
         }
     }
