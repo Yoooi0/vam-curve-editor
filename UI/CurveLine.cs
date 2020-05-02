@@ -17,9 +17,9 @@ namespace CurveEditor.UI
 
         public readonly List<CurveEditorPoint> points;
 
-        public CurveLineSettings settings { get; private set; }
+        public CurveLineSettings settings { get; }
         public AnimationCurve curve => _storable.val;
-        
+
         public DrawScaleOffset drawScale
         {
             get { return _drawScale; }
@@ -117,21 +117,21 @@ namespace CurveEditor.UI
             if (x < min.x || x > max.x)
                 return;
 
-            vh.AddLine(_drawScale.Multiply(new Vector2(x, min.y)), _drawScale.Multiply(new Vector2(x, max.y)), 0.02f, Color.black, viewMatrix);
+            vh.AddLine(_drawScale.Multiply(new Vector2(x, min.y)), _drawScale.Multiply(new Vector2(x, max.y)), settings.scrubberLineThickness, Color.black, viewMatrix);
         }
 
         public void PopulateScrubberPoints(VertexHelper vh, Matrix4x4 viewMatrix, Rect viewBounds, float x)
         {
             var min = _drawScale.inverse.Multiply(viewBounds.min);
             var max = _drawScale.inverse.Multiply(viewBounds.max);
-            if (x + 0.06f < min.x || x - 0.06f > max.x)
+            if (x + 2 * settings.scrubberPointRadius < min.x || x - 2 * settings.scrubberPointRadius > max.x)
                 return;
 
             var y = curve.Evaluate(x);
-            if (y + 0.06f < min.y || y - 0.06f > max.y)
+            if (y + 2 * settings.scrubberPointRadius < min.y || y - 2 * settings.scrubberPointRadius > max.y)
                 return;
 
-            vh.AddCircle(_drawScale.Multiply(new Vector2(x, y)), 0.03f, Color.white, viewMatrix);
+            vh.AddCircle(_drawScale.Multiply(new Vector2(x, y)), settings.scrubberPointRadius, Color.white, viewMatrix);
         }
 
         public void SetCurveFromPoints()
@@ -223,7 +223,7 @@ namespace CurveEditor.UI
                 }
                 else
                 {
-                    point.outHandlePosition = outHandleNormal * point.outHandleLength;
+                    point.outHandlePosition = outHandleNormal * settings.defaultPointHandleLength;
                 }
 
                 var inHandleNormal = _drawScale.Scale(-MathUtils.VectorFromAngle(Mathf.Atan(key.inTangent)).normalized);
@@ -236,7 +236,7 @@ namespace CurveEditor.UI
                 }
                 else
                 {
-                    point.inHandlePosition = inHandleNormal * point.inHandleLength;
+                    point.inHandlePosition = inHandleNormal * settings.defaultPointHandleLength;
                 }
             }
         }
@@ -282,8 +282,8 @@ namespace CurveEditor.UI
 
         private class UICurveEditorPointComparer : IComparer<CurveEditorPoint>
         {
-            public int Compare(CurveEditorPoint x, CurveEditorPoint y)
-                => Comparer<float>.Default.Compare(x.position.x, y.position.x);
+            public int Compare(CurveEditorPoint a, CurveEditorPoint b)
+                => Comparer<float>.Default.Compare(a.position.x, b.position.x);
         }
     }
 }

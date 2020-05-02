@@ -25,8 +25,6 @@ namespace CurveEditor.UI
 
         private bool _isCtrlDown, _isShiftDown, _isAltDown;
 
-        private Matrix4x4 _viewMatrixInv => _viewMatrix.inverse;
-
         public UICurveEditorSettings settings
         {
             get { return _settings; }
@@ -45,9 +43,9 @@ namespace CurveEditor.UI
         public float zoom
         {
             get { return _zoom; }
-            set 
+            set
             {
-                _zoom = value; 
+                _zoom = value;
                 UpdateViewMatrix();
                 SetVerticesDirty();
             }
@@ -188,7 +186,7 @@ namespace CurveEditor.UI
         {
             var line = new CurveLine(storable, settings ?? CurveLineSettings.Default());
             _lines.Add(line);
-            _scrubberPositions.Add(line, line.curve.keys.First().time);
+            _scrubberPositions.Add(line, line.curve.keys.FirstOrDefault().time);
             _storableToLineMap.Add(storable, line);
             SetVerticesDirty();
         }
@@ -238,7 +236,7 @@ namespace CurveEditor.UI
             if (!ScreenPointToLocalPoint(eventData.pressPosition, eventData.pressEventCamera, out localPoint))
                 return;
 
-            var position = _viewMatrixInv.MultiplyPoint2d(localPoint);
+            var position = _viewMatrix.inverse.MultiplyPoint2d(localPoint);
             if (selectedPoint?.OnBeginDrag(position) == true)
             {
                 selectedPoint.parent.SetCurveFromPoints();
@@ -255,9 +253,7 @@ namespace CurveEditor.UI
             }
 
             if (settings.allowViewDragging)
-            {
                 _dragStartPosition = localPoint;
-            }
         }
 
         public void OnDrag(PointerEventData eventData)
@@ -266,7 +262,7 @@ namespace CurveEditor.UI
             if (!ScreenPointToLocalPoint(eventData.position, eventData.pressEventCamera, out localPoint))
                 return;
 
-            var position = _viewMatrixInv.MultiplyPoint2d(localPoint);
+            var position = _viewMatrix.inverse.MultiplyPoint2d(localPoint);
             var viewBounds = GetViewBounds();
             if (!settings.allowViewDragging)
             {
@@ -305,7 +301,7 @@ namespace CurveEditor.UI
             if (!ScreenPointToLocalPoint(eventData.position, eventData.pressEventCamera, out localPoint))
                 return;
 
-            var position = _viewMatrixInv.MultiplyPoint2d(localPoint);
+            var position = _viewMatrix.inverse.MultiplyPoint2d(localPoint);
             if (selectedPoint?.OnEndDrag(position) == true)
             {
                 selectedPoint.parent.SetCurveFromPoints();
@@ -329,7 +325,7 @@ namespace CurveEditor.UI
             if (!ScreenPointToLocalPoint(eventData.position, eventData.pressEventCamera, out localPoint))
                 return;
 
-            var position = _viewMatrixInv.MultiplyPoint2d(localPoint);
+            var position = _viewMatrix.inverse.MultiplyPoint2d(localPoint);
             if (selectedPoint?.OnPointerClick(position) == true)
             {
                 SetVerticesDirty();
@@ -506,8 +502,8 @@ namespace CurveEditor.UI
 
         private Rect GetViewBounds()
         {
-            var viewMin = _viewMatrixInv.MultiplyPoint2d(Vector2.zero);
-            var viewMax = _viewMatrixInv.MultiplyPoint2d(rectTransform.sizeDelta);
+            var viewMin = _viewMatrix.inverse.MultiplyPoint2d(Vector2.zero);
+            var viewMax = _viewMatrix.inverse.MultiplyPoint2d(rectTransform.sizeDelta);
             return new Rect(viewMin, viewMax - viewMin);
         }
 

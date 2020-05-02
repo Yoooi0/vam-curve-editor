@@ -1,15 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
-using CurveEditor.Utils;
-using Leap.Unity;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace CurveEditor.UI
 {
-
     public class CurveLineSettings : INotifyPropertyChanged
     {
         private Color _pointDotColor = new Color(0.427f, 0.035f, 0.517f);
@@ -25,13 +19,15 @@ namespace CurveEditor.UI
         private float _pointHandleDotSkin = 0.04f;
         private float _pointShellSize = 0.2f;
         private float _pointHandleLineThickness = 0.03f;
-        private float _defaultHandleLength = 0.5f;
+        private float _defaultPointHandleLength = 0.5f;
 
         private float _curveLinePrecision = 0.01f;
         private float _curveLineThickness = 0.04f;
         private int _curveLineEvaluateCount = 100;
         private Color _curveLineColor = new Color(0.9f, 0.9f, 0.9f);
         private Color _scrubberColor = new Color(0.382f, 0.111f, 0.488f);
+        private float _scrubberLineThickness = 0.02f;
+        private float _scrubberPointRadius = 0.03f;
 
         protected CurveLineSettings() { }
 
@@ -75,13 +71,15 @@ namespace CurveEditor.UI
         public float pointHandleDotSkin { get { return _pointHandleDotSkin; } set { Set(ref _pointHandleDotSkin, value, nameof(pointHandleDotSkin)); } }
         public float pointShellSize { get { return _pointShellSize; } set { Set(ref _pointShellSize, value, nameof(pointShellSize)); } }
         public float pointHandleLineThickness { get { return _pointHandleLineThickness; } set { Set(ref _pointHandleLineThickness, value, nameof(pointHandleLineThickness)); } }
-        public float defaultHandleLength { get { return _defaultHandleLength; } set { Set(ref _defaultHandleLength, value, nameof(defaultHandleLength)); } }
+        public float defaultPointHandleLength { get { return _defaultPointHandleLength; } set { Set(ref _defaultPointHandleLength, value, nameof(defaultPointHandleLength)); } }
 
         public float curveLinePrecision { get { return _curveLinePrecision; } set { Set(ref _curveLinePrecision, value, nameof(curveLinePrecision)); } }
         public float curveLineThickness { get { return _curveLineThickness; } set { Set(ref _curveLineThickness, value, nameof(curveLineThickness)); } }
         public int curveLineEvaluateCount { get { return _curveLineEvaluateCount; } set { Set(ref _curveLineEvaluateCount, value, nameof(curveLineEvaluateCount)); } }
         public Color curveLineColor { get { return _curveLineColor; } set { Set(ref _curveLineColor, value, nameof(curveLineColor)); } }
         public Color scrubberColor { get { return _scrubberColor; } set { Set(ref _scrubberColor, value, nameof(scrubberColor)); } }
+        public float scrubberLineThickness { get { return _scrubberLineThickness; } set { Set(ref _scrubberLineThickness, value, nameof(scrubberLineThickness)); } }
+        public float scrubberPointRadius { get { return _scrubberPointRadius; } set { Set(ref _scrubberPointRadius, value, nameof(scrubberPointRadius)); } }
 
         public event PropertyChangedEventHandler PropertyChanged;
         protected virtual void OnPropertyChanged(string propertyName)

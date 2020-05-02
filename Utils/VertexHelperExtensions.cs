@@ -63,7 +63,7 @@ namespace CurveEditor.Utils
             {
                 var prev = points[i - 1];
                 var curr = points[i];
-                var angle = Mathf.Atan2(curr.y - prev.y, curr.x - prev.x) * 180f / Mathf.PI;
+                var angle = Mathf.Atan2(curr.y - prev.y, curr.x - prev.x) * Mathf.Rad2Deg;
 
                 var v1 = prev + new Vector2(0, -thickness / 2);
                 var v2 = prev + new Vector2(0, +thickness / 2);

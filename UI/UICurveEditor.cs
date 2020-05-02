@@ -13,7 +13,7 @@ namespace CurveEditor.UI
 
         private readonly GameObject _canvasContainer;
         private readonly UICurveEditorCanvas _canvas;
-        public UICurveEditorSettings settings { get; private set; }
+        public UICurveEditorSettings settings { get; }
 
         public UICurveEditor(UIDynamic container, float width, float height, List<UIDynamicButton> buttons = null, UICurveEditorSettings settings = null)
         {
@@ -50,7 +50,7 @@ namespace CurveEditor.UI
             _canvas.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
             _canvas.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height - buttonContainerHeight);
 
-            if (buttonContainerHeight > 0)
+            if (buttons != null && buttonContainerHeight > 0)
             {
                 var buttonContainer = new GameObject();
                 buttonContainer.transform.SetParent(container.transform, false);
@@ -74,7 +74,7 @@ namespace CurveEditor.UI
 
         private void OnSettingsChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == "readOnly")
+            if (e.PropertyName == nameof(UICurveEditorSettings.readOnly))
             {
                 var canvasGroup = _canvasContainer.GetComponent<CanvasGroup>();
                 canvasGroup.interactable = !settings.readOnly;

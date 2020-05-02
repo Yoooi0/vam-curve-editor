@@ -75,6 +75,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="IStorableAnimationCurve.cs" />
     <Compile Include="JSONStorableAnimationCurve.cs" />

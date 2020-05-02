@@ -81,18 +81,9 @@ namespace CurveEditor
                 _curve2JSON.SetValToDefault();
                 _curveEditor.UpdateCurve(_curve2JSON);
             });
-            playButton.button.onClick.AddListener(() =>
-            {
-                _animation.Play("CurveEditorDemo");
-            });
-            stopButton.button.onClick.AddListener(() =>
-            {
-                _animation.Stop();
-            });
-            fitButton.button.onClick.AddListener(() =>
-            {
-                _curveEditor.SetViewToFit(new Vector4(0.2f, 1, 0.2f, 1));
-            });
+            playButton.button.onClick.AddListener(() => _animation.Play("CurveEditorDemo"));
+            stopButton.button.onClick.AddListener(() => _animation.Stop());
+            fitButton.button.onClick.AddListener(() => _curveEditor.SetViewToFit(new Vector4(0.2f, 1, 0.2f, 1)));
 
             var readOnlyStorable = new JSONStorableBool("ReadOnly", false);
             var readOnlyToggle = CreateToggle(readOnlyStorable);

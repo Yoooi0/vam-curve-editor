@@ -6,8 +6,6 @@ namespace CurveEditor.UI
 {
     public class CurveEditorPoint
     {
-        private float _outHandleLength = 0.5f;
-        private float _inHandleLength = 0.5f;
         private bool _isDraggingPoint = false;
         private bool _isDraggingOutHandle = false;
         private bool _isDraggingInHandle = false;
@@ -19,8 +17,8 @@ namespace CurveEditor.UI
         private Vector2 _outHandlePosition = Vector2.right * 0.5f;
         private Vector2 _inHandlePosition = Vector2.left * 0.5f;
 
-        public CurveLine parent { get; private set; } = null;
-        public CurveLineSettings settings { get; private set; }
+        public CurveLine parent { get; }
+        public CurveLineSettings settings { get; }
 
         public Vector2 position { get; set; } = Vector2.zero;
 
@@ -48,18 +46,6 @@ namespace CurveEditor.UI
             set { _outHandleMode = value; SetOutHandlePosition(_outHandlePosition); }
         }
 
-        public float outHandleLength
-        {
-            get { return _outHandleLength; }
-            set { _outHandleLength = value; SetOutHandlePosition(_outHandlePosition); }
-        }
-
-        public float inHandleLength
-        {
-            get { return _inHandleLength; }
-            set { _inHandleLength = value; SetInHandlePosition(_inHandlePosition); }
-        }
-
         public Vector2 outHandlePosition
         {
             get { return _outHandlePosition; }
@@ -76,17 +62,10 @@ namespace CurveEditor.UI
         {
             this.parent = parent;
             this.settings = settings;
-
-            _inHandleLength = settings.defaultHandleLength;
-            _outHandleLength = settings.defaultHandleLength;
         }
 
         public void PopulateMesh(VertexHelper vh, Matrix4x4 viewMatrix, Rect viewBounds)
         {
-            var pointColor = _showHandles ? settings.pointDotColorSelected : settings.pointDotColor;
-            var lineColor = _handleMode == 0 ? settings.pointHandleLineColor : settings.pointHandleLineColorFree;
-            var handleColor = _outHandleMode == 0 ? settings.pointHandleDotColor : settings.pointHandleDotColorWeighted;
-
             if (showHandles)
             {
                 var bounds = MathUtils.CenterSizeRect(position, 2 * Vector2.one * (settings.pointDotRadius + settings.pointDotSkin));
@@ -96,25 +75,26 @@ namespace CurveEditor.UI
                 if (!viewBounds.Overlaps(bounds))
                     return;
             }
-            else
+            else if (!viewBounds.Overlaps(new Rect(position - Vector2.one * settings.pointDotRadius, 2 * Vector2.one * settings.pointDotRadius)))
             {
-                if (!viewBounds.Overlaps(new Rect(position - Vector2.one * settings.pointDotRadius, 2 * Vector2.one * settings.pointDotRadius)))
-                    return;
+                return;
             }
 
             if (showHandles)
             {
-                vh.AddLine(position, position + _outHandlePosition, settings.pointHandleLineThickness, lineColor, viewMatrix);
-                vh.AddLine(position, position + _inHandlePosition, settings.pointHandleLineThickness, lineColor, viewMatrix);
+                var handleLineColor = _handleMode == 0 ? settings.pointHandleLineColor : settings.pointHandleLineColorFree;
+                var outHandleColor = _outHandleMode == 0 ? settings.pointHandleDotColor : settings.pointHandleDotColorWeighted;
+                var inHandleColor = _inHandleMode == 0 ? settings.pointHandleDotColor : settings.pointHandleDotColorWeighted;
+
+                vh.AddLine(position, position + _outHandlePosition, settings.pointHandleLineThickness, handleLineColor, viewMatrix);
+                vh.AddLine(position, position + _inHandlePosition, settings.pointHandleLineThickness, handleLineColor, viewMatrix);
+
+                vh.AddCircle(position + _outHandlePosition, settings.pointHandleDotRadius, outHandleColor, viewMatrix);
+                vh.AddCircle(position + _inHandlePosition, settings.pointHandleDotRadius, inHandleColor, viewMatrix);
             }
 
+            var pointColor = _showHandles ? settings.pointDotColorSelected : settings.pointDotColor;
             vh.AddCircle(position, settings.pointDotRadius, pointColor, viewMatrix);
-
-            if (showHandles)
-            {
-                vh.AddCircle(position + _outHandlePosition, settings.pointHandleDotRadius, handleColor, viewMatrix);
-                vh.AddCircle(position + _inHandlePosition, settings.pointHandleDotRadius, handleColor, viewMatrix);
-            }
         }
 
         public bool OnBeginDrag(Vector2 point)
@@ -180,33 +160,23 @@ namespace CurveEditor.UI
         private void SetOutHandlePosition(Vector2 handlePosition)
         {
             if (handlePosition.x < 0)
-                _outHandlePosition = Vector2.up * _outHandleLength;
+                _outHandlePosition = Vector2.up * settings.defaultPointHandleLength;
             else
-                _outHandlePosition = handlePosition.normalized * (_outHandleMode == 1 ? handlePosition.magnitude : _outHandleLength);
+                _outHandlePosition = handlePosition.normalized * (_outHandleMode == 1 ? handlePosition.magnitude : settings.defaultPointHandleLength);
 
             if (_handleMode == 0)
-            {
-                if (_inHandleMode == 0 || handlePosition.x < 0)
-                    _inHandlePosition = -_outHandlePosition.normalized * _inHandleLength;
-                else
-                    _inHandlePosition = -_outHandlePosition.normalized * _inHandlePosition.magnitude;
-            }
+                _inHandlePosition = -_outHandlePosition.normalized * ((_inHandleMode == 0 || handlePosition.x < 0) ? settings.defaultPointHandleLength : _inHandlePosition.magnitude);
         }
 
         private void SetInHandlePosition(Vector2 handlePosition)
         {
             if (handlePosition.x > 0)
-                _inHandlePosition = Vector2.down * _inHandleLength;
+                _inHandlePosition = Vector2.down * settings.defaultPointHandleLength;
             else
-                _inHandlePosition = handlePosition.normalized * (_inHandleMode == 1 ? handlePosition.magnitude : _inHandleLength);
+                _inHandlePosition = handlePosition.normalized * (_inHandleMode == 1 ? handlePosition.magnitude : settings.defaultPointHandleLength);
 
             if (_handleMode == 0)
-            {
-                if (_outHandleMode == 0 || handlePosition.x > 0)
-                    _outHandlePosition = -_inHandlePosition.normalized * _outHandleLength;
-                else
-                    _outHandlePosition = -_inHandlePosition.normalized * _outHandlePosition.magnitude;
-            }
+                _outHandlePosition = -_inHandlePosition.normalized * ((_outHandleMode == 0 || handlePosition.x > 0) ? settings.defaultPointHandleLength : _outHandlePosition.magnitude);
         }
 
         public bool IsPositionOutsideShell(Vector2 point)
