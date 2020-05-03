@@ -35,6 +35,7 @@ namespace CurveEditor.UI
 
                 _settings = value;
                 _settings.PropertyChanged += OnSettingsChanged;
+                OnSettingsChanged(this, new PropertyChangedEventArgs(null));
             }
         }
 
@@ -184,7 +185,7 @@ namespace CurveEditor.UI
 
         public void CreateCurve(IStorableAnimationCurve storable, CurveLineSettings settings = null)
         {
-            var line = new CurveLine(storable, settings ?? CurveLineSettings.Default());
+            var line = new CurveLine(storable, settings ?? new CurveLineSettings());
             _lines.Add(line);
             _scrubberPositions.Add(line, line.curve.keys.FirstOrDefault().time);
             _storableToLineMap.Add(storable, line);

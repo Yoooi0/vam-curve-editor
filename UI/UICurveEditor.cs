@@ -70,11 +70,13 @@ namespace CurveEditor.UI
                 foreach (var button in buttons)
                     button.gameObject.transform.SetParent(gridLayout.transform, false);
             }
+
+            OnSettingsChanged(this, new PropertyChangedEventArgs(null));
         }
 
         private void OnSettingsChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(UICurveEditorSettings.readOnly))
+            if (e.PropertyName == null || e.PropertyName == nameof(UICurveEditorSettings.readOnly))
             {
                 var canvasGroup = _canvasContainer.GetComponent<CanvasGroup>();
                 canvasGroup.interactable = !settings.readOnly;
