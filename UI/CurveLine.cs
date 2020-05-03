@@ -115,30 +115,6 @@ namespace CurveEditor.UI
                 point.PopulateMesh(vh, viewMatrix, viewBounds);
         }
 
-        public void PopulateScrubberLine(VertexHelper vh, Matrix4x4 viewMatrix, Rect viewBounds, float x)
-        {
-            var min = _drawScale.inverse.Multiply(viewBounds.min);
-            var max = _drawScale.inverse.Multiply(viewBounds.max);
-            if (x < min.x || x > max.x)
-                return;
-
-            vh.AddLine(_drawScale.Multiply(new Vector2(x, min.y)), _drawScale.Multiply(new Vector2(x, max.y)), settings.scrubberLineThickness, Color.black, viewMatrix);
-        }
-
-        public void PopulateScrubberPoints(VertexHelper vh, Matrix4x4 viewMatrix, Rect viewBounds, float x)
-        {
-            var min = _drawScale.inverse.Multiply(viewBounds.min);
-            var max = _drawScale.inverse.Multiply(viewBounds.max);
-            if (x + 2 * settings.scrubberPointRadius < min.x || x - 2 * settings.scrubberPointRadius > max.x)
-                return;
-
-            var y = curve.Evaluate(x);
-            if (y + 2 * settings.scrubberPointRadius < min.y || y - 2 * settings.scrubberPointRadius > max.y)
-                return;
-
-            vh.AddCircle(_drawScale.Multiply(new Vector2(x, y)), settings.scrubberPointRadius, Color.white, viewMatrix);
-        }
-
         public void SetCurveFromPoints()
         {
             points.Sort(new UICurveEditorPointComparer());

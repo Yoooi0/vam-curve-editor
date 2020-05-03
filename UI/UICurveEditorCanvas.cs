@@ -78,15 +78,13 @@ namespace CurveEditor.UI
                 PopulateGrid(vh, viewBounds, _lines.Last());
 
             if (settings.showScrubbers)
-                foreach (var kv in _scrubberPositions)
-                    kv.Key.PopulateScrubberLine(vh, _viewMatrix, viewBounds, kv.Value);
+                PopulateScrubberLines(vh, viewBounds);
 
             foreach (var line in _lines)
                 line.PopulateMesh(vh, _viewMatrix, viewBounds);
 
             if (settings.showScrubbers)
-                foreach (var kv in _scrubberPositions)
-                    kv.Key.PopulateScrubberPoints(vh, _viewMatrix, viewBounds, kv.Value);
+                PopulateScrubberPoints(vh, viewBounds);
         }
 
         private void PopulateGrid(VertexHelper vh, Rect viewBounds, CurveLine line)
@@ -114,6 +112,38 @@ namespace CurveEditor.UI
                 vh.AddLine(new Vector2(viewMin.x, offset.y), new Vector2(viewMax.x, offset.y), settings.gridAxisThickness, settings.gridAxisColor, _viewMatrix);
             if (viewMin.x - offset.x < 0 && viewMax.x - offset.x > 0)
                 vh.AddLine(new Vector2(offset.x, viewMin.y), new Vector2(offset.x, viewMax.y), settings.gridAxisThickness, settings.gridAxisColor, _viewMatrix);
+        }
+
+        public void PopulateScrubberLines(VertexHelper vh, Rect viewBounds)
+        {
+            foreach (var line in _lines)
+            {
+                var x = _scrubberPositions[line];
+                var min = line.drawScale.inverse.Multiply(viewBounds.min);
+                var max = line.drawScale.inverse.Multiply(viewBounds.max);
+                if (x < min.x || x > max.x)
+                    return;
+
+                vh.AddLine(line.drawScale.Multiply(new Vector2(x, min.y)), line.drawScale.Multiply(new Vector2(x, max.y)), settings.scrubberLineThickness, settings.scrubberLineColor, _viewMatrix);
+            }
+        }
+
+        public void PopulateScrubberPoints(VertexHelper vh, Rect viewBounds)
+        {
+            foreach (var line in _lines)
+            {
+                var x = _scrubberPositions[line];
+                var min = line.drawScale.inverse.Multiply(viewBounds.min);
+                var max = line.drawScale.inverse.Multiply(viewBounds.max);
+                if (x + 2 * settings.scrubberPointRadius < min.x || x - 2 * settings.scrubberPointRadius > max.x)
+                    return;
+
+                var y = line.curve.Evaluate(x);
+                if (y + 2 * settings.scrubberPointRadius < min.y || y - 2 * settings.scrubberPointRadius > max.y)
+                    return;
+
+                vh.AddCircle(line.drawScale.Multiply(new Vector2(x, y)), settings.scrubberPointRadius, settings.scrubberDotColor, _viewMatrix);
+            }
         }
 
         protected void Update()

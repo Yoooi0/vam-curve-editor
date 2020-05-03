@@ -22,6 +22,11 @@ namespace CurveEditor.UI
         private bool _allowKeyboardShortcuts = true;
         private bool _readOnly = false;
 
+        private Color _scrubberLineColor = Color.black;
+        private Color _scrubberDotColor = Color.white;
+        private float _scrubberLineThickness = 0.02f;
+        private float _scrubberPointRadius = 0.03f;
+
         #region INotifyPropertyChanged
         public float buttonContainerHeight { get { return _buttonContainerHeight; } set { Set(ref _buttonContainerHeight, value, nameof(buttonContainerHeight)); } }
         public Color backgroundColor { get { return _backgroundColor; } set { Set(ref _backgroundColor, value, nameof(backgroundColor)); } }
@@ -39,6 +44,11 @@ namespace CurveEditor.UI
         public bool allowViewScaling { get { return _allowViewScaling; } set { Set(ref _allowViewScaling, value, nameof(allowViewScaling)); } }
         public bool allowKeyboardShortcuts { get { return _allowKeyboardShortcuts; } set { Set(ref _allowKeyboardShortcuts, value, nameof(allowKeyboardShortcuts)); } }
         public bool readOnly { get { return _readOnly; } set { Set(ref _readOnly, value, nameof(readOnly)); } }
+
+        public Color scrubberLineColor { get { return _scrubberLineColor; } set { Set(ref _scrubberLineColor, value, nameof(scrubberLineColor)); } }
+        public Color scrubberDotColor { get { return _scrubberDotColor; } set { Set(ref _scrubberDotColor, value, nameof(scrubberDotColor)); } }
+        public float scrubberLineThickness { get { return _scrubberLineThickness; } set { Set(ref _scrubberLineThickness, value, nameof(scrubberLineThickness)); } }
+        public float scrubberPointRadius { get { return _scrubberPointRadius; } set { Set(ref _scrubberPointRadius, value, nameof(scrubberPointRadius)); } }
 
         public event PropertyChangedEventHandler PropertyChanged;
         protected virtual void OnPropertyChanged(string propertyName)

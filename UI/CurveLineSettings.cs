@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.ComponentModel;
 using UnityEngine;
 
@@ -25,9 +25,6 @@ namespace CurveEditor.UI
         private float _curveLineThickness = 0.04f;
         private int _curveLineEvaluateCount = 100;
         private Color _curveLineColor = new Color(0.9f, 0.9f, 0.9f);
-        private Color _scrubberColor = new Color(0.382f, 0.111f, 0.488f);
-        private float _scrubberLineThickness = 0.02f;
-        private float _scrubberPointRadius = 0.03f;
 
         #region INotifyPropertyChanged
         public Color pointDotColor { get { return _pointDotColor; } set { Set(ref _pointDotColor, value, nameof(pointDotColor)); } }
@@ -49,9 +46,6 @@ namespace CurveEditor.UI
         public float curveLineThickness { get { return _curveLineThickness; } set { Set(ref _curveLineThickness, value, nameof(curveLineThickness)); } }
         public int curveLineEvaluateCount { get { return _curveLineEvaluateCount; } set { Set(ref _curveLineEvaluateCount, value, nameof(curveLineEvaluateCount)); } }
         public Color curveLineColor { get { return _curveLineColor; } set { Set(ref _curveLineColor, value, nameof(curveLineColor)); } }
-        public Color scrubberColor { get { return _scrubberColor; } set { Set(ref _scrubberColor, value, nameof(scrubberColor)); } }
-        public float scrubberLineThickness { get { return _scrubberLineThickness; } set { Set(ref _scrubberLineThickness, value, nameof(scrubberLineThickness)); } }
-        public float scrubberPointRadius { get { return _scrubberPointRadius; } set { Set(ref _scrubberPointRadius, value, nameof(scrubberPointRadius)); } }
 
         public event PropertyChangedEventHandler PropertyChanged;
         protected virtual void OnPropertyChanged(string propertyName)
@@ -88,7 +82,6 @@ namespace CurveEditor.UI
             settings.pointHandleDotColor = veryDarkColor;
             settings.pointHandleDotColorWeighted = darkColor;
             settings.curveLineColor = desaturatedColor;
-            settings.scrubberColor = Color.HSVToRGB(h, s * 1.2f, v * 0.9f);
 
             return settings;
         }
@@ -105,8 +98,6 @@ namespace CurveEditor.UI
 
             settings.curveLinePrecision *= scale;
             settings.curveLineThickness *= scale;
-            settings.scrubberLineThickness *= scale;
-            settings.scrubberPointRadius *= scale;
 
             return settings;
         }
