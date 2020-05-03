@@ -29,34 +29,6 @@ namespace CurveEditor.UI
         private float _scrubberLineThickness = 0.02f;
         private float _scrubberPointRadius = 0.03f;
 
-        protected CurveLineSettings() { }
-
-        public static CurveLineSettings Default() => new CurveLineSettings();
-        public static CurveLineSettings Colorize(Color tint, CurveLineSettings settings = null)
-        {
-            //TODO: proper palette generator
-
-            settings = settings ?? Default();
-
-            float h, s, v;
-            Color.RGBToHSV(tint, out h, out s, out v);
-
-            var darkColor = Color.HSVToRGB(h, s, v * 0.8f);
-            var veryDarkColor = Color.HSVToRGB(h, s, v * 0.5f);
-            var desaturatedColor = Color.HSVToRGB(h, s * 0.5f, 1);
-
-            settings.pointDotColor = darkColor;
-            settings.pointDotColorSelected = tint;
-            settings.pointHandleLineColor = veryDarkColor;
-            settings.pointHandleLineColorFree = darkColor;
-            settings.pointHandleDotColor = veryDarkColor;
-            settings.pointHandleDotColorWeighted = darkColor;
-            settings.curveLineColor = desaturatedColor;
-            settings.scrubberColor = Color.HSVToRGB(h, s * 1.2f, v * 0.9f);
-
-            return settings;
-        }
-
         #region INotifyPropertyChanged
         public Color pointDotColor { get { return _pointDotColor; } set { Set(ref _pointDotColor, value, nameof(pointDotColor)); } }
         public Color pointDotColorSelected { get { return _pointDotColorSelected; } set { Set(ref _pointDotColorSelected, value, nameof(pointDotColorSelected)); } }
@@ -95,6 +67,49 @@ namespace CurveEditor.UI
             return true;
         }
         #endregion
+    }
+
+    public static class CurveLineSettingsExtensions
+    {
+        public static CurveLineSettings Colorize(this CurveLineSettings settings, Color tint)
+        {
+            //TODO: proper palette generator
+            float h, s, v;
+            Color.RGBToHSV(tint, out h, out s, out v);
+
+            var darkColor = Color.HSVToRGB(h, s, v * 0.8f);
+            var veryDarkColor = Color.HSVToRGB(h, s, v * 0.5f);
+            var desaturatedColor = Color.HSVToRGB(h, s * 0.5f, 1);
+
+            settings.pointDotColor = darkColor;
+            settings.pointDotColorSelected = tint;
+            settings.pointHandleLineColor = veryDarkColor;
+            settings.pointHandleLineColorFree = darkColor;
+            settings.pointHandleDotColor = veryDarkColor;
+            settings.pointHandleDotColorWeighted = darkColor;
+            settings.curveLineColor = desaturatedColor;
+            settings.scrubberColor = Color.HSVToRGB(h, s * 1.2f, v * 0.9f);
+
+            return settings;
+        }
+
+        public static CurveLineSettings Scale(this CurveLineSettings settings, float scale)
+        {
+            settings.pointDotRadius *= scale;
+            settings.pointDotSkin *= scale;
+            settings.pointHandleDotRadius *= scale;
+            settings.pointHandleDotSkin *= scale;
+            settings.pointShellSize *= scale;
+            settings.pointHandleLineThickness *= scale;
+            settings.defaultPointHandleLength *= scale;
+
+            settings.curveLinePrecision *= scale;
+            settings.curveLineThickness *= scale;
+            settings.scrubberLineThickness *= scale;
+            settings.scrubberPointRadius *= scale;
+
+            return settings;
+        }
     }
 }
 

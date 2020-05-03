@@ -18,7 +18,7 @@ namespace CurveEditor.UI
         public UICurveEditor(UIDynamic container, float width, float height, List<UIDynamicButton> buttons = null, UICurveEditorSettings settings = null)
         {
             this.container = container;
-            this.settings = settings ?? UICurveEditorSettings.Default();
+            this.settings = settings ?? new UICurveEditorSettings();
             this.settings.PropertyChanged += OnSettingsChanged;
 
             gameObject = new GameObject();

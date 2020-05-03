@@ -22,10 +22,6 @@ namespace CurveEditor.UI
         private bool _allowKeyboardShortcuts = true;
         private bool _readOnly = false;
 
-        protected UICurveEditorSettings() { }
-
-        public static UICurveEditorSettings Default() => new UICurveEditorSettings();
-
         #region INotifyPropertyChanged
         public float buttonContainerHeight { get { return _buttonContainerHeight; } set { Set(ref _buttonContainerHeight, value, nameof(buttonContainerHeight)); } }
         public Color backgroundColor { get { return _backgroundColor; } set { Set(ref _backgroundColor, value, nameof(backgroundColor)); } }
