@@ -9,7 +9,7 @@ namespace CurveEditor.UI
     {
         private float _buttonContainerHeight = 25;
         private Color _backgroundColor = new Color(0.721f, 0.682f, 0.741f);
-        private bool _showScrubbers = true;
+        private bool _showScrubbers = false;
         private bool _showGrid = true;
         private Color _gridColor = new Color(0.6f, 0.6f, 0.6f);
         private Color _gridAxisColor = new Color(0.5f, 0.5f, 0.5f);

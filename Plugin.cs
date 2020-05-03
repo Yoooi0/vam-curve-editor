@@ -89,7 +89,7 @@ namespace CurveEditor
             var readOnlyToggle = CreateToggle(readOnlyStorable);
             readOnlyStorable.setCallbackFunction = v => _curveEditor.settings.readOnly = v;
 
-            var showScrubberStorable = new JSONStorableBool("Show Scrubbers", true);
+            var showScrubberStorable = new JSONStorableBool("Show Scrubbers", false);
             var showScrubberToggle = CreateToggle(showScrubberStorable);
             showScrubberStorable.setCallbackFunction = v => _curveEditor.settings.showScrubbers = v;
 

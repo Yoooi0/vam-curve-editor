@@ -275,9 +275,30 @@ namespace CurveEditor.UI
 
         public float DistanceToPoint(Vector2 point)
         {
-            var localPoint = drawScale.inverse.Multiply(point);
-            var screenEval = drawScale.Multiply(new Vector2(localPoint.x, curve.Evaluate(localPoint.x)));
+            var localPoint = _drawScale.inverse.Multiply(point);
+            var screenEval = _drawScale.Multiply(new Vector2(localPoint.x, curve.Evaluate(localPoint.x)));
             return Mathf.Abs(point.y - screenEval.y);
+        }
+
+        public Vector2 GetGridCellSize(Rect viewBouns, int cellCount)
+        {
+            var viewMin = _drawScale.inverse.Scale(viewBouns.min);
+            var viewMax = _drawScale.inverse.Scale(viewBouns.max);
+
+            var roughStep = (viewMax - viewMin) / (cellCount - 1);
+
+            var stepPower = new Vector2(
+                Mathf.Pow(2, -Mathf.Floor(Mathf.Log(Mathf.Abs(roughStep.x), 2))),
+                Mathf.Pow(2, -Mathf.Floor(Mathf.Log(Mathf.Abs(roughStep.y), 2)))
+            );
+
+            var normalizedStep = roughStep * stepPower;
+            var step = new Vector2(
+                Mathf.NextPowerOfTwo(Mathf.CeilToInt(normalizedStep.x)),
+                Mathf.NextPowerOfTwo(Mathf.CeilToInt(normalizedStep.y))
+            );
+
+            return _drawScale.Scale(step / stepPower);
         }
 
         private class UICurveEditorPointComparer : IComparer<CurveEditorPoint>

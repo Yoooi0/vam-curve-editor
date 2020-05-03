@@ -96,25 +96,24 @@ namespace CurveEditor.UI
 
             var viewMin = viewBounds.min;
             var viewMax = viewBounds.max;
-            var cellSize = GetGridCellSize(line, viewBounds);
+            var cellSize = line.GetGridCellSize(viewBounds, settings.gridCellCount);
 
-            var minX = Mathf.Floor(viewMin.x / cellSize.x) * cellSize.x;
-            var maxX = Mathf.Ceil(viewMax.x / cellSize.x) * cellSize.x;
-            var minY = Mathf.Floor(viewMin.y / cellSize.y) * cellSize.y;
-            var maxY = Mathf.Ceil(viewMax.y / cellSize.y) * cellSize.y;
+            var offset = line.drawScale.Translate(Vector2.zero);
+            var minX = Mathf.Floor((viewMin.x - offset.x) / cellSize.x) * cellSize.x;
+            var maxX = Mathf.Ceil ((viewMax.x - offset.x) / cellSize.x) * cellSize.x;
+            var minY = Mathf.Floor((viewMin.y - offset.y) / cellSize.y) * cellSize.y;
+            var maxY = Mathf.Ceil ((viewMax.y - offset.y) / cellSize.y) * cellSize.y;
 
-            if ((maxX - minX) / cellSize.x < 100)
-                for (var x = minX; x <= maxX; x += cellSize.x)
-                    vh.AddLine(new Vector2(x, viewMin.y), new Vector2(x, viewMax.y), settings.gridThickness, settings.gridColor, _viewMatrix);
+            for (var x = minX; x <= maxX; x += cellSize.x)
+                vh.AddLine(new Vector2(x + offset.x, viewMin.y), new Vector2(x + offset.x, viewMax.y), settings.gridThickness, settings.gridColor, _viewMatrix);
 
-            if ((maxY - minY) / cellSize.x < 100)
-                for (var y = minY; y <= maxY; y += cellSize.y)
-                    vh.AddLine(new Vector2(viewMin.x, y), new Vector2(viewMax.x, y), settings.gridThickness, settings.gridColor, _viewMatrix);
+            for (var y = minY; y <= maxY; y += cellSize.y)
+                vh.AddLine(new Vector2(viewMin.x, y + offset.y), new Vector2(viewMax.x, y + offset.y), settings.gridThickness, settings.gridColor, _viewMatrix);
 
-            if (viewMin.y < 0 && viewMax.y > 0)
-                vh.AddLine(new Vector2(viewMin.x, 0), new Vector2(viewMax.x, 0), settings.gridAxisThickness, settings.gridAxisColor, _viewMatrix);
-            if (viewMin.x < 0 && viewMax.x > 0)
-                vh.AddLine(new Vector2(0, viewMin.y), new Vector2(0, viewMax.y), settings.gridAxisThickness, settings.gridAxisColor, _viewMatrix);
+            if (viewMin.y - offset.y < 0 && viewMax.y - offset.y > 0)
+                vh.AddLine(new Vector2(viewMin.x, offset.y), new Vector2(viewMax.x, offset.y), settings.gridAxisThickness, settings.gridAxisColor, _viewMatrix);
+            if (viewMin.x - offset.x < 0 && viewMax.x - offset.x > 0)
+                vh.AddLine(new Vector2(offset.x, viewMin.y), new Vector2(offset.x, viewMax.y), settings.gridAxisThickness, settings.gridAxisColor, _viewMatrix);
         }
 
         protected void Update()
@@ -143,7 +142,7 @@ namespace CurveEditor.UI
                 {
                     foreach (var line in _lines)
                     {
-                        line.drawScale.Resize(2f);
+                        line.drawScale.ratio *= 2f;
                         line.SetPointsFromCurve();
                     }
 
@@ -154,7 +153,7 @@ namespace CurveEditor.UI
                 {
                     foreach (var line in _lines)
                     {
-                        line.drawScale.Resize(0.5f);
+                        line.drawScale.ratio *= 0.5f;
                         line.SetPointsFromCurve();
                     }
 
@@ -265,6 +264,17 @@ namespace CurveEditor.UI
 
             var position = _viewMatrix.inverse.MultiplyPoint2d(localPoint);
             var viewBounds = GetViewBounds();
+
+            if (_isCtrlDown)
+            {
+                var line = selectedPoint.parent;
+                var offset = line.drawScale.Translate(Vector2.zero);
+                var gridSnap = line.GetGridCellSize(viewBounds, settings.gridCellCount);
+
+                position.x = Mathf.Round((position.x - offset.x) / gridSnap.x) * gridSnap.x + offset.x;
+                position.y = Mathf.Round((position.y - offset.y) / gridSnap.y) * gridSnap.y + offset.y;
+            }
+
             if (!settings.allowViewDragging)
             {
                 position.x = Mathf.Clamp(position.x, viewBounds.min.x, viewBounds.max.x);
@@ -273,13 +283,6 @@ namespace CurveEditor.UI
 
             if(selectedPoint != null)
             {
-                if (_isCtrlDown)
-                {
-                    var gridSnap = GetGridCellSize(selectedPoint.parent, viewBounds);
-                    position.x = Mathf.Round(position.x / gridSnap.x) * gridSnap.x;
-                    position.y = Mathf.Round(position.y / gridSnap.y) * gridSnap.y;
-                }
-
                 if (selectedPoint.OnDrag(position))
                 {
                     selectedPoint.parent.SetCurveFromPoints();
@@ -402,7 +405,7 @@ namespace CurveEditor.UI
             if (!_storableToLineMap.TryGetValue(storable, out line))
                 return;
 
-            var offset = offsetToCenter ? -valueBounds.min : Vector2.zero;
+            var offset = offsetToCenter ? -valueBounds.min : valueBounds.min;
             if (normalizeToView)
                 line.drawScale = DrawScaleOffset.FromNormalizedValueBounds(valueBounds, GetViewBounds().size, offset);
             else
@@ -506,27 +509,6 @@ namespace CurveEditor.UI
             var viewMin = _viewMatrix.inverse.MultiplyPoint2d(Vector2.zero);
             var viewMax = _viewMatrix.inverse.MultiplyPoint2d(rectTransform.sizeDelta);
             return new Rect(viewMin, viewMax - viewMin);
-        }
-
-        private Vector2 GetGridCellSize(CurveLine line, Rect viewBouns)
-        {
-            var viewMin = line.drawScale.inverse.Scale(viewBouns.min);
-            var viewMax = line.drawScale.inverse.Scale(viewBouns.max);
-
-            var roughStep = (viewMax - viewMin) / (settings.gridCellCount - 1);
-
-            var stepPower = new Vector2(
-                Mathf.Pow(2, -Mathf.Floor(Mathf.Log(Mathf.Abs(roughStep.x), 2))),
-                Mathf.Pow(2, -Mathf.Floor(Mathf.Log(Mathf.Abs(roughStep.y), 2)))
-            );
-
-            var normalizedStep = roughStep * stepPower;
-            var step = new Vector2(
-                Mathf.NextPowerOfTwo(Mathf.CeilToInt(normalizedStep.x)),
-                Mathf.NextPowerOfTwo(Mathf.CeilToInt(normalizedStep.y))
-            );
-
-            return line.drawScale.Scale(step / stepPower);
         }
     }
 }
