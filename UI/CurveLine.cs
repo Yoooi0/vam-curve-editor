@@ -40,6 +40,7 @@ namespace CurveEditor.UI
         {
             //TODO: support WrapMode
             //TODO: clip y
+            //TODO: fix moving curvePoints
 
             var curvePoints = new List<Vector2>();
             var min = _drawScale.inverse.Multiply(viewBounds.min) - Vector2.one * settings.curveLineThickness;
@@ -72,8 +73,11 @@ namespace CurveEditor.UI
                             curvePoints.Add(_drawScale.Multiply(new Vector2(key.time, prev.value)));
                         }
 
-                        curvePoints.Add(_drawScale.Multiply(new Vector2(key.time, key.value)));
-                        curvePoints.Add(curr);
+                        var keyPosition = _drawScale.Multiply(new Vector2(key.time, key.value));
+                        curvePoints.Add(keyPosition);
+
+                        if(Vector2.Distance(keyPosition, curr) > 0.0001f)
+                            curvePoints.Add(curr);
 
                         if (float.IsInfinity(key.outTangent) && keyIndex + 1 < curve.length)
                         {
