@@ -93,6 +93,9 @@ namespace CurveEditor
             var showScrubberToggle = CreateToggle(showScrubberStorable);
             showScrubberStorable.setCallbackFunction = v => _curveEditor.settings.showScrubbers = v;
 
+            var syncScrubberStorable = new JSONStorableBool("Sync Scrubbers", false);
+            var syncScrubberToggle = CreateToggle(syncScrubberStorable);
+
             var scrubberSliderStorable = new JSONStorableFloat("Scrubber time", 0, 0, 2);
             var scrubberSlider = CreateSlider(scrubberSliderStorable);
 
@@ -103,8 +106,16 @@ namespace CurveEditor
                 {
                     state.time = v;
                 }
-                _curveEditor.SetScrubber(_curve1JSON, v);
-                _curveEditor.SetScrubber(_curve2JSON, 2 - v);
+
+                if (syncScrubberStorable.val)
+                {
+                    _curveEditor.SetScrubberPosition(v);
+                }
+                else
+                {
+                    _curveEditor.SetScrubberPosition(_curve1JSON, v);
+                    _curveEditor.SetScrubberPosition(_curve2JSON, 2 - v);
+                }
             };
 
             var normalizeScaleStorable = new JSONStorableBool("Normalize to view", false);

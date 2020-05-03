@@ -118,11 +118,14 @@ namespace CurveEditor.UI
         {
             foreach (var line in _lines)
             {
+                if (!_scrubberPositions.ContainsKey(line))
+                    continue;
+
                 var x = _scrubberPositions[line];
                 var min = line.drawScale.inverse.Multiply(viewBounds.min);
                 var max = line.drawScale.inverse.Multiply(viewBounds.max);
                 if (x < min.x || x > max.x)
-                    return;
+                    continue;
 
                 vh.AddLine(line.drawScale.Multiply(new Vector2(x, min.y)), line.drawScale.Multiply(new Vector2(x, max.y)), settings.scrubberLineThickness, settings.scrubberLineColor, _viewMatrix);
             }
@@ -132,15 +135,18 @@ namespace CurveEditor.UI
         {
             foreach (var line in _lines)
             {
+                if (!_scrubberPositions.ContainsKey(line))
+                    continue;
+
                 var x = _scrubberPositions[line];
                 var min = line.drawScale.inverse.Multiply(viewBounds.min);
                 var max = line.drawScale.inverse.Multiply(viewBounds.max);
                 if (x + 2 * settings.scrubberPointRadius < min.x || x - 2 * settings.scrubberPointRadius > max.x)
-                    return;
+                    continue;
 
                 var y = line.curve.Evaluate(x);
                 if (y + 2 * settings.scrubberPointRadius < min.y || y - 2 * settings.scrubberPointRadius > max.y)
-                    return;
+                    continue;
 
                 vh.AddCircle(line.drawScale.Multiply(new Vector2(x, y)), settings.scrubberPointRadius, settings.scrubberDotColor, _viewMatrix);
             }
@@ -219,7 +225,6 @@ namespace CurveEditor.UI
 
             var line = new CurveLine(storable, curveSettings);
             _lines.Add(line);
-            _scrubberPositions.Add(line, line.curve.keys.FirstOrDefault().time);
             _storableToLineMap.Add(storable, line);
             SetVerticesDirty();
         }
@@ -409,6 +414,19 @@ namespace CurveEditor.UI
 
                 if (e.PropertyName == null || needsRedraw.Contains(e.PropertyName))
                     SetVerticesDirty();
+
+                if (e.PropertyName == nameof(UICurveEditorSettings.showScrubbers))
+                {
+                    if (!settings.showScrubbers)
+                    {
+                        SetScrubberPosition(float.NaN);
+                    }
+                    else
+                    {
+                        foreach (var line in _lines)
+                            SetScrubberPosition(line, line.curve.keys.First().time);
+                    }
+                }
             }
             else if(sender.GetType() == typeof(CurveLineSettings))
             {
@@ -471,18 +489,32 @@ namespace CurveEditor.UI
 
         public void SetScrubberPosition(float time)
         {
+            if (_lines.Count == 0)
+                return;
+
             foreach (var line in _lines)
-                _scrubberPositions[line] = time;
-            SetVerticesDirty();
+                SetScrubberPosition(line, time);
         }
 
         public void SetScrubberPosition(IStorableAnimationCurve storable, float time)
         {
+            if (_lines.Count == 0)
+                return;
+
             CurveLine line;
             if (!_storableToLineMap.TryGetValue(storable, out line))
                 return;
 
-            _scrubberPositions[line] = time;
+            SetScrubberPosition(line, time);
+        }
+
+        private void SetScrubberPosition(CurveLine line, float time)
+        {
+            if (float.IsInfinity(time) || float.IsNaN(time))
+                _scrubberPositions.Remove(line);
+            else
+                _scrubberPositions[line] = time;
+
             SetVerticesDirty();
         }
 
