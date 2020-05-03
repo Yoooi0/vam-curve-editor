@@ -184,7 +184,10 @@ namespace CurveEditor.UI
 
         public void CreateCurve(IStorableAnimationCurve storable, CurveLineSettings settings = null)
         {
-            var line = new CurveLine(storable, settings ?? new CurveLineSettings());
+            var curveSettings = settings ?? new CurveLineSettings();
+            curveSettings.PropertyChanged += OnSettingsChanged;
+
+            var line = new CurveLine(storable, curveSettings);
             _lines.Add(line);
             _scrubberPositions.Add(line, line.curve.keys.FirstOrDefault().time);
             _storableToLineMap.Add(storable, line);
@@ -197,6 +200,8 @@ namespace CurveEditor.UI
                 return;
 
             var line = _storableToLineMap[storable];
+            line.settings.PropertyChanged -= OnSettingsChanged;
+
             _lines.Remove(line);
             _scrubberPositions.Remove(line);
             _storableToLineMap.Remove(storable);
@@ -359,8 +364,26 @@ namespace CurveEditor.UI
 
         private void OnSettingsChanged(object sender, PropertyChangedEventArgs e)
         {
-            //TODO: not everything needs a redraw
-            SetVerticesDirty();
+            if(sender.GetType() == typeof(UICurveEditorSettings))
+            {
+                var needsRedraw = new[]
+                {
+                    nameof(UICurveEditorSettings.showScrubbers),
+                    nameof(UICurveEditorSettings.showGrid),
+                    nameof(UICurveEditorSettings.gridColor),
+                    nameof(UICurveEditorSettings.gridAxisColor),
+                    nameof(UICurveEditorSettings.gridThickness),
+                    nameof(UICurveEditorSettings.gridAxisThickness),
+                    nameof(UICurveEditorSettings.gridCellCount),
+                };
+
+                if (e.PropertyName == null || needsRedraw.Contains(e.PropertyName))
+                    SetVerticesDirty();
+            }
+            else if(sender.GetType() == typeof(CurveLineSettings))
+            {
+                SetVerticesDirty();
+            }
         }
 
         public void SetViewToFit(Vector4 margin = new Vector4())
