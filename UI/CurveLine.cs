@@ -42,8 +42,8 @@ namespace CurveEditor.UI
             //TODO: clip y
 
             var curvePoints = new List<Vector2>();
-            var min = _drawScale.inverse.Multiply(viewBounds.min);
-            var max = _drawScale.inverse.Multiply(viewBounds.max);
+            var min = _drawScale.inverse.Multiply(viewBounds.min) - Vector2.one * settings.curveLineThickness;
+            var max = _drawScale.inverse.Multiply(viewBounds.max) + Vector2.one * settings.curveLineThickness;
 
             var minKeyIndex = Array.FindLastIndex(curve.keys, k => k.time < min.x);
             var maxKeyIndex = Array.FindIndex(curve.keys, k => k.time > max.x);
@@ -54,9 +54,10 @@ namespace CurveEditor.UI
 
             for (var i = 0; i < settings.curveLineEvaluateCount; i++)
             {
-                var count = curvePoints.Count;
-                var x = min.x + (max.x - min.x) * (i / (settings.curveLineEvaluateCount - 1f));
+                var x = Mathf.Lerp(min.x, max.x, i / (settings.curveLineEvaluateCount - 1f));
                 var curr = _drawScale.Multiply(new Vector2(x, curve.Evaluate(x)));
+
+                var count = curvePoints.Count;
                 if (count > 0 && curr.x <= curvePoints.Last().x)
                     continue;
 
