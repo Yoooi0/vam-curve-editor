@@ -1,4 +1,4 @@
-﻿using CurveEditor.Utils;
+using CurveEditor.Utils;
 using Leap.Unity.Swizzle;
 using System;
 using System.Collections.Generic;
@@ -467,9 +467,8 @@ namespace CurveEditor.UI
             SetVerticesDirty();
         }
 
-        public void SetValueBounds(IStorableAnimationCurve storable, Rect valueBounds, bool normalizeToView = false, bool offsetToCenter = false)
+        public void SetDrawScale(IStorableAnimationCurve storable, Rect valueBounds, bool normalizeToView = false, bool offsetToCenter = false)
         {
-            // Ensure view matrix is up to date
             UpdateViewMatrix();
 
             CurveLine line;
@@ -484,23 +483,15 @@ namespace CurveEditor.UI
 
             SetVerticesDirty();
         }
-        public void SetValueBounds(IStorableAnimationCurve storable, Vector2 valueMin, Vector2 valueMax, bool normalizeToView = false, bool offsetToCenter = false)
-            => SetValueBounds(storable, new Rect(valueMin, valueMax - valueMin), normalizeToView, offsetToCenter);
 
         public void SetScrubberPosition(float time)
         {
-            if (_lines.Count == 0)
-                return;
-
             foreach (var line in _lines)
                 SetScrubberPosition(line, time);
         }
 
         public void SetScrubberPosition(IStorableAnimationCurve storable, float time)
         {
-            if (_lines.Count == 0)
-                return;
-
             CurveLine line;
             if (!_storableToLineMap.TryGetValue(storable, out line))
                 return;

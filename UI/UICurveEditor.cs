@@ -91,8 +91,8 @@ namespace CurveEditor.UI
         public void UpdateCurve(IStorableAnimationCurve storable) => _canvas.UpdateCurve(storable);
         public void SetScrubberPosition(float time) => _canvas.SetScrubberPosition(time);
         public void SetScrubberPosition(IStorableAnimationCurve storable, float time) => _canvas.SetScrubberPosition(storable, time);
-        public void SetValueBounds(IStorableAnimationCurve storable, Rect valueBounds, bool normalizeToView = false, bool offsetToCenter = false) => _canvas.SetValueBounds(storable, valueBounds, normalizeToView, offsetToCenter);
-        public void SetValueBounds(IStorableAnimationCurve storable, Vector2 min, Vector2 max, bool normalizeToView = false, bool offsetToCenter = false) => _canvas.SetValueBounds(storable, min, max, normalizeToView, offsetToCenter);
+        public void SetDrawScale(IStorableAnimationCurve storable, Rect valueBounds, bool normalizeToView = false, bool offsetToCenter = false) => _canvas.SetDrawScale(storable, valueBounds, normalizeToView, offsetToCenter);
+        public void SetDrawScale(IStorableAnimationCurve storable, Vector2 min, Vector2 max, bool normalizeToView = false, bool offsetToCenter = false) => SetDrawScale(storable, new Rect(min, max - min), normalizeToView, offsetToCenter);
         public void SetViewToFit(Vector4 margin = new Vector4()) => _canvas.SetViewToFit(margin);
         public void ToggleHandleMode() => _canvas.ToggleHandleMode();
         public void ToggleOutHandleMode() => _canvas.ToggleOutHandleMode();

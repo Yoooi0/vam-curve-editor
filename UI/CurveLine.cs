@@ -41,6 +41,7 @@ namespace CurveEditor.UI
             //TODO: support WrapMode
             //TODO: clip y
             //TODO: fix moving curvePoints
+            //TODO: add cliprect setting
 
             var curvePoints = new List<Vector2>();
             var min = _drawScale.inverse.Multiply(viewBounds.min) - Vector2.one * settings.curveLineThickness;
