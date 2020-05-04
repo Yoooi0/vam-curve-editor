@@ -457,17 +457,16 @@ namespace CurveEditor.UI
             valueMin -= margin.xw();
             valueMax += margin.zy();
 
-            var valueBounds = new Rect(valueMin, valueMax - valueMin);
-            var drawScale = DrawScaleOffset.FromNormalizedValueBounds(valueBounds, GetViewBounds().size);
+            var drawScale = DrawScaleOffset.FromNormalizedSizeOffset(valueMax - valueMin, GetViewBounds().size);
             foreach (var line in _lines)
                 line.drawScale = new DrawScaleOffset(drawScale);
 
-            _cameraPosition = -drawScale.Multiply(valueBounds.min) * _zoom;
+            _cameraPosition = -drawScale.Multiply(valueMin) * _zoom;
             UpdateViewMatrix();
             SetVerticesDirty();
         }
 
-        public void SetDrawScale(IStorableAnimationCurve storable, Rect valueBounds, bool normalizeToView = false, bool offsetToCenter = false)
+        public void SetDrawScale(IStorableAnimationCurve storable, Vector2 size, Vector2 offset, bool normalizeToView = false)
         {
             UpdateViewMatrix();
 
@@ -475,11 +474,10 @@ namespace CurveEditor.UI
             if (!_storableToLineMap.TryGetValue(storable, out line))
                 return;
 
-            var offset = offsetToCenter ? -valueBounds.min : valueBounds.min;
             if (normalizeToView)
-                line.drawScale = DrawScaleOffset.FromNormalizedValueBounds(valueBounds, GetViewBounds().size, offset);
+                line.drawScale = DrawScaleOffset.FromNormalizedSizeOffset(size, GetViewBounds().size, offset);
             else
-                line.drawScale = DrawScaleOffset.FromValueBounds(valueBounds, offset);
+                line.drawScale = DrawScaleOffset.FromSizeOffset(size, offset);
 
             SetVerticesDirty();
         }
