@@ -4,8 +4,6 @@ namespace CurveEditor.UI
 {
     public class DrawScaleOffset
     {
-        private DrawScaleOffset drawScale;
-
         public DrawScaleOffset() { }
         public DrawScaleOffset(DrawScaleOffset drawScale) : this(drawScale.offset, drawScale.ratio) { }
 
@@ -15,8 +13,8 @@ namespace CurveEditor.UI
             this.ratio = ratio;
         }
 
-        public Vector2 offset { get; private set; } = new Vector2(0, 0);
-        public Vector2 ratio { get; private set; } = new Vector2(1f, 1f);
+        public Vector2 offset { get; set; } = new Vector2(0, 0);
+        public Vector2 ratio { get; set; } = new Vector2(1f, 1f);
         public DrawScaleOffset inverse => DrawScaleOffset.Inverse(this);
 
         public static DrawScaleOffset FromValueBounds(Rect valueBounds, Vector2 offset = new Vector2())
@@ -35,12 +33,11 @@ namespace CurveEditor.UI
             return new DrawScaleOffset(offset, new Vector2(ratioX, ratioY));
         }
 
-        public static DrawScaleOffset Inverse(DrawScaleOffset drawScale) // TODO: probably wrong 
+        public static DrawScaleOffset Inverse(DrawScaleOffset drawScale)
             => new DrawScaleOffset(-drawScale.offset * drawScale.ratio, new Vector2(1 / drawScale.ratio.x, 1 / drawScale.ratio.y));
 
-        public void Resize(float v) => ratio *= v;
         public Vector2 Scale(Vector2 value) => value * ratio;
-        public Vector2 Translate(Vector2 value) => value + offset;
+        public Vector2 Translate(Vector2 value) => value + offset * ratio;
         public Vector2 Multiply(Vector2 value) => (value + offset) * ratio;
     }
 }

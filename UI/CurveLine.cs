@@ -1,5 +1,8 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using CurveEditor.Utils;
+using Leap.Unity;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -8,10 +11,14 @@ namespace CurveEditor.UI
     public class CurveLine
     {
         private readonly IStorableAnimationCurve _storable;
-        private readonly UICurveLineColors _colors;
+
         private CurveEditorPoint _selectedPoint;
         private DrawScaleOffset _drawScale = new DrawScaleOffset();
+
         public readonly List<CurveEditorPoint> points;
+
+        public CurveLineSettings settings { get; }
+        public AnimationCurve curve => _storable.val;
 
         public DrawScaleOffset drawScale
         {
@@ -19,60 +26,94 @@ namespace CurveEditor.UI
             set { _drawScale = value; SetPointsFromCurve(); }
         }
 
-        public float thickness { get; set; } = 0.04f;
-        public int evaluateCount { get; set; } = 100;
-        public AnimationCurve curve => _storable.val;
-
-        public CurveLine(IStorableAnimationCurve storable, UICurveLineColors colors = null)
+        public CurveLine(IStorableAnimationCurve storable, CurveLineSettings settings)
         {
             points = new List<CurveEditorPoint>();
 
             _storable = storable;
-            _colors = colors ?? new UICurveLineColors();
+            this.settings = settings;
 
             SetPointsFromCurve();
         }
 
         public void PopulateMesh(VertexHelper vh, Matrix4x4 viewMatrix, Rect viewBounds)
         {
-            var min = _drawScale.inverse.Multiply(viewBounds.min);
-            var max = _drawScale.inverse.Multiply(viewBounds.max);
+            //TODO: support WrapMode
+            //TODO: clip y
+            //TODO: fix moving curvePoints
+            //TODO: add cliprect setting
 
-            var curvePoints = new Vector2[evaluateCount];
-            for (var i = 0; i < evaluateCount; i++)
+            var curvePoints = new List<Vector2>();
+            var min = _drawScale.inverse.Multiply(viewBounds.min) - Vector2.one * settings.curveLineThickness;
+            var max = _drawScale.inverse.Multiply(viewBounds.max) + Vector2.one * settings.curveLineThickness;
+
+            var minKeyIndex = Array.FindLastIndex(curve.keys, k => k.time < min.x);
+            var maxKeyIndex = Array.FindIndex(curve.keys, k => k.time > max.x);
+
+            if (minKeyIndex < 0) minKeyIndex = 0;
+            if (maxKeyIndex < 0) maxKeyIndex = curve.length - 1;
+            var keyIndex = minKeyIndex;
+
+            for (var i = 0; i < settings.curveLineEvaluateCount; i++)
             {
-                var x = Mathf.Lerp(min.x, max.x, (float)i / (evaluateCount - 1));
-                var y = curve.Evaluate(x);
-                curvePoints[i] = _drawScale.Multiply(new Vector2(x, y));
+                var x = Mathf.Lerp(min.x, max.x, i / (settings.curveLineEvaluateCount - 1f));
+                var curr = _drawScale.Multiply(new Vector2(x, curve.Evaluate(x)));
+
+                var count = curvePoints.Count;
+                if (count > 0 && curr.x <= curvePoints.Last().x)
+                    continue;
+
+                if(keyIndex >= minKeyIndex && keyIndex <= maxKeyIndex)
+                {
+                    var key = curve.keys[keyIndex];
+                    if (key.time < x)
+                    {
+                        if (float.IsInfinity(key.inTangent) && keyIndex - 1 >= 0)
+                        {
+                            var prev = curve.keys[keyIndex - 1];
+                            curvePoints.Add(_drawScale.Multiply(new Vector2(key.time, prev.value)));
+                        }
+
+                        var keyPosition = _drawScale.Multiply(new Vector2(key.time, key.value));
+                        curvePoints.Add(keyPosition);
+
+                        if(Vector2.Distance(keyPosition, curr) > 0.0001f)
+                            curvePoints.Add(curr);
+
+                        if (float.IsInfinity(key.outTangent) && keyIndex + 1 < curve.length)
+                        {
+                            var next = curve.keys[keyIndex + 1];
+                            var nextTime = Mathf.Min(max.x, next.time);
+                            curvePoints.Add(_drawScale.Multiply(new Vector2(nextTime, key.value)));
+                            curvePoints.Add(_drawScale.Multiply(new Vector2(nextTime, next.value)));
+                        }
+
+                        keyIndex++;
+                        continue;
+                    }
+                }
+
+                if (count < 2 || x >= max.x)
+                {
+                    curvePoints.Add(curr);
+                    continue;
+                }
+
+                var prev0 = curvePoints[count - 2];
+                var prev1 = curvePoints[count - 1];
+                var prevTangent = prev1 - prev0;
+                var currTangent = curr - prev1;
+                var prevNormal = prevTangent.Perpendicular().normalized;
+                var error = prevNormal * Vector2.Dot(prevNormal, currTangent);
+
+                if (error.magnitude > settings.curveLinePrecision)
+                    curvePoints.Add(curr);
             }
 
-            vh.AddLine(curvePoints, thickness, _colors.lineColor, viewMatrix);
+            vh.AddLine(curvePoints, settings.curveLineThickness, settings.curveLineColor, viewMatrix);
+
             foreach (var point in points)
                 point.PopulateMesh(vh, viewMatrix, viewBounds);
-        }
-
-        public void PopulateScrubberLine(VertexHelper vh, Matrix4x4 viewMatrix, Rect viewBounds, float x)
-        {
-            var min = _drawScale.inverse.Multiply(viewBounds.min);
-            var max = _drawScale.inverse.Multiply(viewBounds.max);
-            if (x < min.x || x > max.x)
-                return;
-
-            vh.AddLine(_drawScale.Multiply(new Vector2(x, min.y)), _drawScale.Multiply(new Vector2(x, max.y)), 0.02f, Color.black, viewMatrix);
-        }
-
-        public void PopulateScrubberPoints(VertexHelper vh, Matrix4x4 viewMatrix, Rect viewBounds, float x)
-        {
-            var min = _drawScale.inverse.Multiply(viewBounds.min);
-            var max = _drawScale.inverse.Multiply(viewBounds.max);
-            if (x + 0.06f < min.x || x - 0.06f > max.x)
-                return;
-
-            var y = curve.Evaluate(x);
-            if (y + 0.06f < min.y || y - 0.06f > max.y)
-                return;
-
-            vh.AddCircle(_drawScale.Multiply(new Vector2(x, y)), 0.03f, Color.white, viewMatrix);
         }
 
         public void SetCurveFromPoints()
@@ -164,7 +205,7 @@ namespace CurveEditor.UI
                 }
                 else
                 {
-                    point.outHandlePosition = outHandleNormal * point.outHandleLength;
+                    point.outHandlePosition = outHandleNormal * settings.defaultPointHandleLength;
                 }
 
                 var inHandleNormal = _drawScale.Scale(-MathUtils.VectorFromAngle(Mathf.Atan(key.inTangent)).normalized);
@@ -177,14 +218,14 @@ namespace CurveEditor.UI
                 }
                 else
                 {
-                    point.inHandlePosition = inHandleNormal * point.inHandleLength;
+                    point.inHandlePosition = inHandleNormal * settings.defaultPointHandleLength;
                 }
             }
         }
 
         public CurveEditorPoint CreatePoint(Vector2 position = new Vector2())
         {
-            var point = new CurveEditorPoint(this, _colors)
+            var point = new CurveEditorPoint(this, settings)
             {
                 position = position
             };
@@ -216,15 +257,36 @@ namespace CurveEditor.UI
 
         public float DistanceToPoint(Vector2 point)
         {
-            var localPoint = drawScale.inverse.Multiply(point);
-            var screenEval = drawScale.Multiply(new Vector2(localPoint.x, curve.Evaluate(localPoint.x)));
+            var localPoint = _drawScale.inverse.Multiply(point);
+            var screenEval = _drawScale.Multiply(new Vector2(localPoint.x, curve.Evaluate(localPoint.x)));
             return Mathf.Abs(point.y - screenEval.y);
+        }
+
+        public Vector2 GetGridCellSize(Rect viewBouns, int cellCount)
+        {
+            var viewMin = _drawScale.inverse.Scale(viewBouns.min);
+            var viewMax = _drawScale.inverse.Scale(viewBouns.max);
+
+            var roughStep = (viewMax - viewMin) / (cellCount - 1);
+
+            var stepPower = new Vector2(
+                Mathf.Pow(2, -Mathf.Floor(Mathf.Log(Mathf.Abs(roughStep.x), 2))),
+                Mathf.Pow(2, -Mathf.Floor(Mathf.Log(Mathf.Abs(roughStep.y), 2)))
+            );
+
+            var normalizedStep = roughStep * stepPower;
+            var step = new Vector2(
+                Mathf.NextPowerOfTwo(Mathf.CeilToInt(normalizedStep.x)),
+                Mathf.NextPowerOfTwo(Mathf.CeilToInt(normalizedStep.y))
+            );
+
+            return _drawScale.Scale(step / stepPower);
         }
 
         private class UICurveEditorPointComparer : IComparer<CurveEditorPoint>
         {
-            public int Compare(CurveEditorPoint x, CurveEditorPoint y)
-                => Comparer<float>.Default.Compare(x.position.x, y.position.x);
+            public int Compare(CurveEditorPoint a, CurveEditorPoint b)
+                => Comparer<float>.Default.Compare(a.position.x, b.position.x);
         }
     }
 }

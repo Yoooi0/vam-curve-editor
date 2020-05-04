@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -11,67 +13,18 @@ namespace CurveEditor.UI
 
         private readonly GameObject _canvasContainer;
         private readonly UICurveEditorCanvas _canvas;
-        private readonly UICurveEditorColors _colors;
+        public UICurveEditorSettings settings { get; }
 
-        private bool _readOnly;
-
-        public bool readOnly
+        public UICurveEditor(UIDynamic container, float width, float height, List<UIDynamicButton> buttons = null, UICurveEditorSettings settings = null)
         {
-            get { return _readOnly; }
-            set
-            {
-                _readOnly = value;
-
-                var canvasGroup = _canvasContainer.GetComponent<CanvasGroup>();
-                canvasGroup.interactable = !value;
-                canvasGroup.blocksRaycasts = !value;
-
-                _canvas.readOnly = value;
-                _canvas.SetSelectedPoint(null);
-            }
-        }
-
-        public bool allowKeyboardShortcuts
-        {
-            get { return _canvas.allowKeyboardShortcuts; }
-            set { _canvas.allowKeyboardShortcuts = value; }
-        }
-
-        public bool showScrubbers
-        {
-            get { return _canvas.showScrubbers; }
-            set { _canvas.showScrubbers = value; }
-        }
-
-        public bool allowViewDragging
-        {
-            get { return _canvas.allowViewDragging; }
-            set { _canvas.allowViewDragging = value; }
-        }
-
-        public bool allowViewZooming
-        {
-            get { return _canvas.allowViewZooming; }
-            set { _canvas.allowViewZooming = value; }
-        }
-
-        public bool allowViewScaling
-        {
-            get { return _canvas.allowViewScaling; }
-            set { _canvas.allowViewScaling = value; }
-        }
-
-        public UICurveEditor(UIDynamic container, float width, float height, List<UIDynamicButton> buttons = null, UICurveEditorColors colors = null, bool readOnly = false)
-        {
-            var buttonContainerHeight = (buttons == null || buttons.Count == 0) ? 0 : 25;
-
             this.container = container;
-
-            _colors = colors ?? new UICurveEditorColors();
+            this.settings = settings ?? new UICurveEditorSettings();
+            this.settings.PropertyChanged += OnSettingsChanged;
 
             gameObject = new GameObject();
             gameObject.transform.SetParent(container.transform, false);
 
+            var buttonContainerHeight = (buttons == null || buttons.Count == 0) ? 0 : this.settings.buttonContainerHeight;
             var mask = gameObject.AddComponent<RectMask2D>();
             mask.rectTransform.anchoredPosition = new Vector2(0, buttonContainerHeight / 2);
             mask.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
@@ -83,21 +36,21 @@ namespace CurveEditor.UI
             var backgroundImage = backgroundContent.AddComponent<Image>();
             backgroundImage.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
             backgroundImage.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height - buttonContainerHeight);
-            backgroundImage.color = _colors.backgroundColor;
+            backgroundImage.color = this.settings.backgroundColor;
 
             _canvasContainer = new GameObject();
             _canvasContainer.transform.SetParent(gameObject.transform, false);
             _canvasContainer.AddComponent<CanvasGroup>();
             _canvas = _canvasContainer.AddComponent<UICurveEditorCanvas>();
+            _canvas.settings = this.settings;
+
             _canvas.rectTransform.anchorMin = new Vector2(0, 0);
             _canvas.rectTransform.anchorMax = new Vector2(0, 0);
             _canvas.rectTransform.pivot = new Vector2(0, 0);
             _canvas.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
             _canvas.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height - buttonContainerHeight);
 
-            this.readOnly = readOnly;
-
-            if (buttons != null && buttons.Count != 0)
+            if (buttons != null && buttonContainerHeight > 0)
             {
                 var buttonContainer = new GameObject();
                 buttonContainer.transform.SetParent(container.transform, false);
@@ -117,16 +70,29 @@ namespace CurveEditor.UI
                 foreach (var button in buttons)
                     button.gameObject.transform.SetParent(gridLayout.transform, false);
             }
+
+            OnSettingsChanged(this, new PropertyChangedEventArgs(null));
+        }
+
+        private void OnSettingsChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == null || e.PropertyName == nameof(UICurveEditorSettings.readOnly))
+            {
+                var canvasGroup = _canvasContainer.GetComponent<CanvasGroup>();
+                canvasGroup.interactable = !settings.readOnly;
+                canvasGroup.blocksRaycasts = !settings.readOnly;
+                _canvas.SetSelectedPoint(null);
+            }
         }
 
         //TODO: meh...
-        public void AddCurve(IStorableAnimationCurve storable, UICurveLineColors colors = null, float thickness = 0.04f) => _canvas.CreateCurve(storable, colors, thickness);
+        public void AddCurve(IStorableAnimationCurve storable, CurveLineSettings settings = null) => _canvas.CreateCurve(storable, settings);
         public void RemoveCurve(IStorableAnimationCurve storable) => _canvas.RemoveCurve(storable);
         public void UpdateCurve(IStorableAnimationCurve storable) => _canvas.UpdateCurve(storable);
         public void SetScrubberPosition(float time) => _canvas.SetScrubberPosition(time);
-        public void SetScrubber(IStorableAnimationCurve storable, float time) => _canvas.SetScrubberPosition(storable, time);
-        public void SetValueBounds(IStorableAnimationCurve storable, Rect valueBounds, bool normalizeToView = false, bool offsetToCenter = false) => _canvas.SetValueBounds(storable, valueBounds, normalizeToView, offsetToCenter);
-        public void SetValueBounds(IStorableAnimationCurve storable, Vector2 min, Vector2 max, bool normalizeToView = false, bool offsetToCenter = false) => _canvas.SetValueBounds(storable, min, max, normalizeToView, offsetToCenter);
+        public void SetScrubberPosition(IStorableAnimationCurve storable, float time) => _canvas.SetScrubberPosition(storable, time);
+        public void SetDrawScale(IStorableAnimationCurve storable, Rect valueBounds, bool normalizeToView = false, bool offsetToCenter = false) => _canvas.SetDrawScale(storable, valueBounds, normalizeToView, offsetToCenter);
+        public void SetDrawScale(IStorableAnimationCurve storable, Vector2 min, Vector2 max, bool normalizeToView = false, bool offsetToCenter = false) => SetDrawScale(storable, new Rect(min, max - min), normalizeToView, offsetToCenter);
         public void SetViewToFit(Vector4 margin = new Vector4()) => _canvas.SetViewToFit(margin);
         public void ToggleHandleMode() => _canvas.ToggleHandleMode();
         public void ToggleOutHandleMode() => _canvas.ToggleOutHandleMode();
