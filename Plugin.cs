@@ -65,9 +65,9 @@ namespace CurveEditor
 
             _curveEditor = new UICurveEditor(container, 520, container.height, buttons: curveEditorButtons);
             _curveEditor.AddCurve(_curve1JSON, new CurveLineSettings().Colorize(new Color(0.388f, 0.698f, 0.890f)));
-            _curveEditor.SetDrawScale(_curve1JSON, new Rect(0, 0, 2, 10), true, true);
+            _curveEditor.SetDrawScale(_curve1JSON, new Vector2(2, 10), new Vector2(), true);
             _curveEditor.AddCurve(_curve2JSON, new CurveLineSettings().Colorize(new Color(0.890f, 0.388f, 0.398f)));
-            _curveEditor.SetDrawScale(_curve2JSON, new Rect(0, 0, 2, 1), true, true);
+            _curveEditor.SetDrawScale(_curve2JSON, new Vector2(2, 1), new Vector2(), true);
 
             var resetButton = CreateButton("Reset");
             var playButton = CreateButton("Play");
@@ -121,9 +121,6 @@ namespace CurveEditor
             var normalizeScaleStorable = new JSONStorableBool("Normalize to view", false);
             var normalizeScaleToggle = CreateToggle(normalizeScaleStorable);
 
-            var offsetScaleStorable = new JSONStorableBool("Offset to center", false);
-            var offsetScaleToggle = CreateToggle(offsetScaleStorable);
-
             var timeScaleSliderStorable = new JSONStorableFloat("Time Scale", 1, 0.5f, 8);
             var valueScaleSliderStorable = new JSONStorableFloat("Value Scale", 1, 0.5f, 8);
 
@@ -131,16 +128,16 @@ namespace CurveEditor
 
             timeScaleSliderStorable.setCallbackFunction = v =>
             {
-                _curveEditor.SetDrawScale(_curve1JSON, new Rect(0, 0, v, valueScaleSliderStorable.val), normalizeScaleStorable.val, offsetScaleStorable.val);
-                _curveEditor.SetDrawScale(_curve2JSON, new Rect(0, 0, v, valueScaleSliderStorable.val), normalizeScaleStorable.val, offsetScaleStorable.val);
+                _curveEditor.SetDrawScale(_curve1JSON, new Vector2(v, valueScaleSliderStorable.val), new Vector2(0, 1), normalizeScaleStorable.val);
+                _curveEditor.SetDrawScale(_curve2JSON, new Vector2(v, valueScaleSliderStorable.val), new Vector2(0, 0), normalizeScaleStorable.val);
             };
 
             var valueScaleSlider = CreateSlider(valueScaleSliderStorable);
 
             valueScaleSliderStorable.setCallbackFunction = v =>
             {
-                _curveEditor.SetDrawScale(_curve1JSON, new Rect(0, 0, timeScaleSliderStorable.val, v), normalizeScaleStorable.val, offsetScaleStorable.val);
-                _curveEditor.SetDrawScale(_curve2JSON, new Rect(0, 0, timeScaleSliderStorable.val, v), normalizeScaleStorable.val, offsetScaleStorable.val);
+                _curveEditor.SetDrawScale(_curve1JSON, new Vector2(timeScaleSliderStorable.val, v), new Vector2(0, 1), normalizeScaleStorable.val);
+                _curveEditor.SetDrawScale(_curve2JSON, new Vector2(timeScaleSliderStorable.val, v), new Vector2(0, 0), normalizeScaleStorable.val);
             };
         }
 
