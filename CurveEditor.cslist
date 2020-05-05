@@ -4,9 +4,9 @@ JSONStorableAnimationCurve.cs
 UI\UICurveEditor.cs
 UI\UICurveEditorCanvas.cs
 UI\UICurveEditorSettings.cs
-UI\DrawScaleOffset.cs
 UI\CurveLine.cs
 UI\CurveLineSettings.cs
 UI\CurveEditorPoint.cs
+Utils\Matrix2x3.cs
 Utils\MathUtils.cs
 Utils\VertexHelperExtensions.cs

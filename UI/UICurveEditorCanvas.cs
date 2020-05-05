@@ -96,7 +96,7 @@ namespace CurveEditor.UI
             var viewMax = viewBounds.max;
             var cellSize = line.GetGridCellSize(viewBounds, settings.gridCellCount);
 
-            var offset = line.drawScale.Translate(Vector2.zero);
+            var offset = line.drawMatrix.Translate(Vector2.zero);
             var minX = Mathf.Floor((viewMin.x - offset.x) / cellSize.x) * cellSize.x;
             var maxX = Mathf.Ceil ((viewMax.x - offset.x) / cellSize.x) * cellSize.x;
             var minY = Mathf.Floor((viewMin.y - offset.y) / cellSize.y) * cellSize.y;
@@ -122,12 +122,12 @@ namespace CurveEditor.UI
                     continue;
 
                 var x = _scrubberPositions[line];
-                var min = line.drawScale.inverse.Multiply(viewBounds.min);
-                var max = line.drawScale.inverse.Multiply(viewBounds.max);
+                var min = line.drawMatrix.inverse * viewBounds.min;
+                var max = line.drawMatrix.inverse * viewBounds.max;
                 if (x < min.x || x > max.x)
                     continue;
 
-                vh.AddLine(line.drawScale.Multiply(new Vector2(x, min.y)), line.drawScale.Multiply(new Vector2(x, max.y)), settings.scrubberLineThickness, settings.scrubberLineColor, _viewMatrix);
+                vh.AddLine(line.drawMatrix * new Vector2(x, min.y), line.drawMatrix * new Vector2(x, max.y), settings.scrubberLineThickness, settings.scrubberLineColor, _viewMatrix);
             }
         }
 
@@ -139,8 +139,8 @@ namespace CurveEditor.UI
                     continue;
 
                 var x = _scrubberPositions[line];
-                var min = line.drawScale.inverse.Multiply(viewBounds.min);
-                var max = line.drawScale.inverse.Multiply(viewBounds.max);
+                var min = line.drawMatrix.inverse * viewBounds.min;
+                var max = line.drawMatrix.inverse * viewBounds.max;
                 if (x + 2 * settings.scrubberPointRadius < min.x || x - 2 * settings.scrubberPointRadius > max.x)
                     continue;
 
@@ -148,7 +148,7 @@ namespace CurveEditor.UI
                 if (y + 2 * settings.scrubberPointRadius < min.y || y - 2 * settings.scrubberPointRadius > max.y)
                     continue;
 
-                vh.AddCircle(line.drawScale.Multiply(new Vector2(x, y)), settings.scrubberPointRadius, settings.scrubberDotColor, _viewMatrix);
+                vh.AddCircle(line.drawMatrix * new Vector2(x, y), settings.scrubberPointRadius, settings.scrubberDotColor, _viewMatrix);
             }
         }
 
@@ -178,7 +178,7 @@ namespace CurveEditor.UI
                 {
                     foreach (var line in _lines)
                     {
-                        line.drawScale.ratio *= 2f;
+                        line.drawMatrix.scale *= 2f;
                         line.SetPointsFromCurve();
                     }
 
@@ -189,7 +189,7 @@ namespace CurveEditor.UI
                 {
                     foreach (var line in _lines)
                     {
-                        line.drawScale.ratio *= 0.5f;
+                        line.drawMatrix.scale *= 0.5f;
                         line.SetPointsFromCurve();
                     }
 
@@ -308,7 +308,7 @@ namespace CurveEditor.UI
             if (_isCtrlDown)
             {
                 var line = selectedPoint.parent;
-                var offset = line.drawScale.Translate(Vector2.zero);
+                var offset = line.drawMatrix.Translate(Vector2.zero);
                 var gridSnap = line.GetGridCellSize(viewBounds, settings.gridCellCount);
 
                 position.x = Mathf.Round((position.x - offset.x) / gridSnap.x) * gridSnap.x + offset.x;
@@ -457,11 +457,11 @@ namespace CurveEditor.UI
             valueMin -= margin.xw();
             valueMax += margin.zy();
 
-            var drawScale = DrawScaleOffset.FromNormalizedSizeOffset(valueMax - valueMin, GetViewBounds().size);
+            var drawMatrix = Matrix2x3.FromNormalizedTranslationSize(Vector2.zero, valueMax - valueMin, GetViewBounds().size);
             foreach (var line in _lines)
-                line.drawScale = new DrawScaleOffset(drawScale);
+                line.drawMatrix = new Matrix2x3(drawMatrix);
 
-            _cameraPosition = -drawScale.Multiply(valueMin) * _zoom;
+            _cameraPosition = -(drawMatrix * valueMin * _zoom);
             UpdateViewMatrix();
             SetVerticesDirty();
         }
@@ -475,9 +475,9 @@ namespace CurveEditor.UI
                 return;
 
             if (normalizeToView)
-                line.drawScale = DrawScaleOffset.FromNormalizedSizeOffset(size, GetViewBounds().size, offset);
+                line.drawMatrix = Matrix2x3.FromNormalizedTranslationSize(offset, size, GetViewBounds().size);
             else
-                line.drawScale = DrawScaleOffset.FromSizeOffset(size, offset);
+                line.drawMatrix = Matrix2x3.FromTranslationSize(offset, size);
 
             SetVerticesDirty();
         }

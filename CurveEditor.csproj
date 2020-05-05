@@ -81,7 +81,7 @@
     <Compile Include="JSONStorableAnimationCurve.cs" />
     <Compile Include="UI\UICurveEditorCanvas.cs" />
     <Compile Include="UI\UICurveEditor.cs" />
-    <Compile Include="UI\DrawScaleOffset.cs" />
+    <Compile Include="Utils\Matrix2x3.cs" />
     <Compile Include="UI\CurveEditorPoint.cs" />
     <Compile Include="UI\CurveLine.cs" />
     <Compile Include="UI\UICurveEditorSettings.cs" />
