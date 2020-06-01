@@ -37,7 +37,7 @@ namespace CurveEditor.Utils
         }
 
         public static Matrix2x3 identity => new Matrix2x3(Vector2.zero, Vector2.one);
-        public static Matrix2x3 Inverse(Matrix2x3 m) => new Matrix2x3(-m.translation, new Vector2(1 / m.scale.x, 1 / m.scale.y));
+        public static Matrix2x3 Inverse(Matrix2x3 m) => new Matrix2x3(-m.translation / m.scale, new Vector2(1 / m.scale.x, 1 / m.scale.y));
 
         public static Vector2 operator *(Matrix2x3 m, Vector2 v) => m.Multiply(v);
         public override string ToString() => $"(tx: {translation.x}, ty: {translation.y}, sx: {scale.x}, sy: {scale.y})";
