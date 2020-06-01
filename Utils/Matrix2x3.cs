@@ -26,18 +26,18 @@ namespace CurveEditor.Utils
         public static Matrix2x3 FromScale(Vector2 scale) => new Matrix2x3(Vector2.zero, scale);
         public static Matrix2x3 FromTranslationScale(Vector2 translation, Vector2 scale) => new Matrix2x3(translation, scale);
 
-        public static Matrix2x3 FromTranslationSize(Vector2 translation, Vector2 size) => FromNormalizedTranslationSize(translation, Vector2.one, size);
+        public static Matrix2x3 FromTranslationSize(Vector2 translation, Vector2 size) => FromNormalizedTranslationSize(translation, size, Vector2.one);
         public static Matrix2x3 FromNormalizedTranslationSize(Vector2 translation, Vector2 size, Vector2 unitSize)
         {
-            var sx = size.x < 0.0001f ? 1 : unitSize.x / size.x;
-            var xy = size.y < 0.0001f ? 1 : unitSize.y / size.y;
-            var scale = new Vector2(sx, xy);
+            var sx = (size.x < 0.0001f) ? 1 : (unitSize.x / size.x);
+            var sy = (size.y < 0.0001f) ? 1 : (unitSize.y / size.y);
+            var scale = new Vector2(sx, sy);
 
             return new Matrix2x3(translation * scale, scale);
         }
 
         public static Matrix2x3 identity => new Matrix2x3(Vector2.zero, Vector2.one);
-        public static Matrix2x3 Inverse(Matrix2x3 m) => new Matrix2x3(-m.translation, new Vector2(1 / m.scale.x, 1 / m.scale.y));
+        public static Matrix2x3 Inverse(Matrix2x3 m) => new Matrix2x3(-m.translation / m.scale, new Vector2(1 / m.scale.x, 1 / m.scale.y));
 
         public static Vector2 operator *(Matrix2x3 m, Vector2 v) => m.Multiply(v);
         public override string ToString() => $"(tx: {translation.x}, ty: {translation.y}, sx: {scale.x}, sy: {scale.y})";
