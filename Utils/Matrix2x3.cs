@@ -26,12 +26,12 @@ namespace CurveEditor.Utils
         public static Matrix2x3 FromScale(Vector2 scale) => new Matrix2x3(Vector2.zero, scale);
         public static Matrix2x3 FromTranslationScale(Vector2 translation, Vector2 scale) => new Matrix2x3(translation, scale);
 
-        public static Matrix2x3 FromTranslationSize(Vector2 translation, Vector2 size) => FromNormalizedTranslationSize(translation, Vector2.one, size);
+        public static Matrix2x3 FromTranslationSize(Vector2 translation, Vector2 size) => FromNormalizedTranslationSize(translation, size, Vector2.one);
         public static Matrix2x3 FromNormalizedTranslationSize(Vector2 translation, Vector2 size, Vector2 unitSize)
         {
-            var sx = size.x < 0.0001f ? 1 : unitSize.x / size.x;
-            var xy = size.y < 0.0001f ? 1 : unitSize.y / size.y;
-            var scale = new Vector2(sx, xy);
+            var sx = (size.x < 0.0001f) ? 1 : (unitSize.x / size.x);
+            var sy = (size.y < 0.0001f) ? 1 : (unitSize.y / size.y);
+            var scale = new Vector2(sx, sy);
 
             return new Matrix2x3(translation * scale, scale);
         }
